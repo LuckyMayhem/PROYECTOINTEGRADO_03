@@ -1,6 +1,33 @@
-venv/ 
-__pycache__/ 
-*.pyc 
-.env 
-db.sqlite3 
+# Byte-compiled / optimized files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django staticfiles and media
 staticfiles/
+media/
+
+# Environment variables & secrets (NUNCA commitear .env real)
+.env
+!.env.example
+
+# Databases
+*.sqlite3
+db.sqlite3
+*.sqlite3-journal
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Server / Process / Logs
+*.log
+gunicorn.sock
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

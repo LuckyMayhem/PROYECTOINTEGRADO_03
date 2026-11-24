@@ -37,6 +37,7 @@ from .caja import (
     cajero_mesa_cuenta,
     cajero_liquidar_mesa,
     api_mesas_con_cuenta,
+    api_mesas_disponibles,
     api_resumen_caja_actual,
     admin_abrir_caja,
     admin_cerrar_caja,
@@ -48,6 +49,8 @@ from .mesero import (
     mesero_tomar_pedido,
     mesero_solicitar_cuenta,
     mesero_cambiar_mesa,
+    mesero_marcar_entregado,
+    api_mesero_estado,
 )
 from .cocina import (
     cocinero_view,

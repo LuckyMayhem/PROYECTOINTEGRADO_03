@@ -7,9 +7,115 @@
     'use strict';
 
     let PRODUCTOS = [];
+    let MESAS_DISPONIBLES = [];
     let carrito = []; // [{ id, nombre, precio, cantidad, stock }]
     let modoActivo = 'barra'; // 'barra' | 'mesa'
     let mesaCuentaActiva = null; // Detalle de la comanda de mesa cargada para liquidar
+
+    function cargarMesasDisponiblesDesdeScript() {
+        const el = document.getElementById('mesas-disponibles-data');
+        if (el) {
+            try {
+                MESAS_DISPONIBLES = JSON.parse(el.textContent);
+            } catch (e) {
+                console.error('Error al parsear mesas disponibles:', e);
+                MESAS_DISPONIBLES = [];
+            }
+        }
+    }
+
+    function renderizarSelectorMesasDisponibles(filtro) {
+        const select = document.getElementById('selectMesaAsignar');
+        const badge = document.getElementById('badgeTotalMesasDisponibles');
+        if (!select) return;
+
+        const valorPrevio = select.value;
+        const q = normalizarTexto(filtro || '');
+
+        const mesasFiltradas = MESAS_DISPONIBLES.filter(m => {
+            if (!q) return true;
+            const nombre = normalizarTexto(m.nombre || '');
+            const numero = String(m.numero || '');
+            const capacidad = String(m.capacidad || '');
+            return nombre.includes(q) || numero.includes(q) || capacidad.includes(q);
+        });
+
+        if (badge) {
+            badge.textContent = `${MESAS_DISPONIBLES.length} disponible${MESAS_DISPONIBLES.length === 1 ? '' : 's'}`;
+        }
+
+        select.innerHTML = '';
+
+        // Opción por defecto clara para retiro / sin mesa
+        const optSinMesa = document.createElement('option');
+        optSinMesa.value = '';
+        optSinMesa.textContent = '🍽️ Sin mesa / Retiro en caja';
+        select.appendChild(optSinMesa);
+
+        if (mesasFiltradas.length === 0 && q) {
+            const optVacia = document.createElement('option');
+            optVacia.value = '';
+            optVacia.disabled = true;
+            optVacia.textContent = `❌ Sin mesas disponibles con "${filtro}"`;
+            select.appendChild(optVacia);
+        } else {
+            mesasFiltradas.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = String(m.id);
+                opt.setAttribute('data-numero', m.numero);
+                opt.setAttribute('data-nombre', m.nombre);
+                opt.setAttribute('data-capacidad', m.capacidad);
+                opt.textContent = `${m.nombre} (${m.capacidad} pers.)`;
+                select.appendChild(opt);
+            });
+        }
+
+        if (valorPrevio && Array.from(select.options).some(o => o.value === valorPrevio)) {
+            select.value = valorPrevio;
+        } else {
+            select.value = '';
+        }
+
+        actualizarEstadoBotonVenta();
+    }
+
+    function actualizarEstadoBotonVenta() {
+        const select = document.getElementById('selectMesaAsignar');
+        const selectUbicacion = document.getElementById('selectMesa');
+        const btnEmitir = document.getElementById('btnEmitirVenta');
+        if (!btnEmitir) return;
+
+        const mesaId = select ? select.value : '';
+        if (mesaId && mesaId !== '') {
+            const opt = select.options[select.selectedIndex];
+            const nombreMesa = opt ? (opt.getAttribute('data-nombre') || opt.textContent.split('(')[0].trim()) : 'Mesa';
+            btnEmitir.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Pagar y Asignar a ${nombreMesa}`;
+            if (selectUbicacion) {
+                selectUbicacion.disabled = true;
+            }
+        } else {
+            btnEmitir.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Pagar y Emitir Boleta (Barra / Caja)`;
+            if (selectUbicacion) {
+                selectUbicacion.disabled = false;
+            }
+        }
+    }
+
+    async function refrescarMesasDisponibles() {
+        try {
+            const resp = await fetch('/api/mesas-disponibles/');
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.mesas_disponibles)) {
+                MESAS_DISPONIBLES = data.mesas_disponibles;
+                const inputFiltro = document.getElementById('filtroMesaAsignar');
+                const q = inputFiltro ? inputFiltro.value : '';
+                renderizarSelectorMesasDisponibles(q);
+            }
+        } catch (e) {
+            console.warn('No se pudo refrescar lista de mesas disponibles:', e);
+        }
+    }
 
     function getCookie(name) {
         if (name === 'csrftoken') {
@@ -134,6 +240,14 @@
         carrito = [];
         const notasInput = document.getElementById('inputNotasComanda');
         if (notasInput) notasInput.value = '';
+
+        // Reiniciar selector de mesa y buscador
+        const selectMesaAsignar = document.getElementById('selectMesaAsignar');
+        if (selectMesaAsignar) selectMesaAsignar.value = '';
+        const filtroMesa = document.getElementById('filtroMesaAsignar');
+        if (filtroMesa) filtroMesa.value = '';
+        renderizarSelectorMesasDisponibles('');
+
         renderizarCarrito();
     }
 
@@ -207,9 +321,19 @@
         const notasInput = document.getElementById('inputNotasComanda');
         const notas = notasInput ? notasInput.value.trim() : '';
 
+        // Mesa seleccionada opcionalmente desde el selector con buscador
+        const selectMesaAsignar = document.getElementById('selectMesaAsignar');
+        const mesaId = (selectMesaAsignar && selectMesaAsignar.value) ? parseInt(selectMesaAsignar.value, 10) : null;
+        let nombreMesa = null;
+        if (mesaId && selectMesaAsignar.selectedIndex >= 0) {
+            const opt = selectMesaAsignar.options[selectMesaAsignar.selectedIndex];
+            nombreMesa = opt.getAttribute('data-nombre') || opt.textContent.split('(')[0].trim();
+        }
+
         const payload = {
-            tipo_venta: 'barra',
-            mesa: mesaSel ? mesaSel.value : 'Barra Principal',
+            tipo_venta: mesaId ? 'mesa' : 'barra',
+            mesa: mesaId ? nombreMesa : (mesaSel ? mesaSel.value : 'Barra Principal'),
+            mesa_id: mesaId,
             mesero_id: meseroId ? parseInt(meseroId, 10) : null,
             metodo_pago: metodoPago,
             notas: notas,
@@ -238,7 +362,7 @@
 
                 if (tkFolio) tkFolio.innerText = data.folio;
                 if (tkFecha) tkFecha.innerText = new Date().toLocaleString('es-CL');
-                if (tkMesa) tkMesa.innerText = `${payload.mesa} (Barra Inmediata)`;
+                if (tkMesa) tkMesa.innerText = mesaId ? `${nombreMesa} (Mesa Asignada en Caja)` : `${payload.mesa} (Barra Inmediata)`;
                 if (tkMetodoPago) tkMetodoPago.innerText = metodoPago.toUpperCase();
                 if (tkTotal) tkTotal.innerText = `$${payload.total.toLocaleString()} CLP`;
 
@@ -263,10 +387,22 @@
                     modal.show();
                 }
 
-                // Limpiar carrito local y notas
+                // Si se asignó mesa, eliminarla inmediatamente de MESAS_DISPONIBLES en memoria local
+                if (mesaId) {
+                    MESAS_DISPONIBLES = MESAS_DISPONIBLES.filter(m => m.id !== mesaId);
+                }
+
+                // Limpiar carrito local, notas y reiniciar selector de mesa
                 carrito = [];
                 if (notasInput) notasInput.value = '';
+                if (selectMesaAsignar) selectMesaAsignar.value = '';
+                const filtroMesa = document.getElementById('filtroMesaAsignar');
+                if (filtroMesa) filtroMesa.value = '';
+                renderizarSelectorMesasDisponibles('');
                 renderizarCarrito();
+
+                // Sincronizar mesas disponibles con backend
+                refrescarMesasDisponibles();
             } else {
                 mostrarAlerta('danger', data.error || 'No se pudo procesar la venta.');
             }
@@ -275,7 +411,7 @@
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> Pagar y Emitir Boleta (Barra)`;
+                actualizarEstadoBotonVenta();
             }
         }
     }
@@ -506,6 +642,9 @@
                 if (sinMesaMsg) sinMesaMsg.classList.remove('d-none');
                 if (totalMesaEl) totalMesaEl.textContent = '$0 CLP';
                 if (badgeMesaActiva) badgeMesaActiva.textContent = 'Ninguna';
+
+                // Refrescar mesas disponibles para que la mesa liberada esté disponible para asignación
+                refrescarMesasDisponibles();
             } else {
                 mostrarAlerta('danger', data.error || 'No se pudo liquidar la mesa.');
             }
@@ -562,6 +701,10 @@
                 console.error("Error al parsear catálogo de productos:", e);
             }
         }
+
+        // Cargar e inicializar mesas disponibles para asignación
+        cargarMesasDisponiblesDesdeScript();
+        renderizarSelectorMesasDisponibles('');
 
         // Pestañas / Separación visual entre Ventas en Barra y Cuentas por Mesa
         document.body.addEventListener('click', function(e) {
@@ -671,6 +814,35 @@
         if (inputFiltroMesas) {
             inputFiltroMesas.addEventListener('input', filtrarMesasPendientes);
             inputFiltroMesas.addEventListener('keyup', filtrarMesasPendientes);
+        }
+
+        // Filtro buscador de mesas disponibles para asignación
+        const inputFiltroMesaAsignar = document.getElementById('filtroMesaAsignar');
+        if (inputFiltroMesaAsignar) {
+            inputFiltroMesaAsignar.addEventListener('input', function() {
+                renderizarSelectorMesasDisponibles(this.value);
+            });
+            inputFiltroMesaAsignar.addEventListener('keyup', function() {
+                renderizarSelectorMesasDisponibles(this.value);
+            });
+        }
+
+        // Botón limpiar filtro de mesas disponibles
+        const btnLimpiarFiltroMesa = document.getElementById('btnLimpiarFiltroMesa');
+        if (btnLimpiarFiltroMesa) {
+            btnLimpiarFiltroMesa.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (inputFiltroMesaAsignar) inputFiltroMesaAsignar.value = '';
+                renderizarSelectorMesasDisponibles('');
+            });
+        }
+
+        // Cambio en el selector de mesa a asignar
+        const selectMesaAsignar = document.getElementById('selectMesaAsignar');
+        if (selectMesaAsignar) {
+            selectMesaAsignar.addEventListener('change', function() {
+                actualizarEstadoBotonVenta();
+            });
         }
 
         // Botón imprimir comprobante térmico

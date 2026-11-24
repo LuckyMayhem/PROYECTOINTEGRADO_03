@@ -50,7 +50,7 @@ from .admin_panel import (
 
 
 def mesero_view(request):
-    """Módulo de salón para el mesero."""
+    """Módulo de salón para el mesero con navegación por pestañas y contadores."""
     usuario = obtener_usuario(request)
     if not usuario:
         return error_401_view(request, mensaje='Se requiere iniciar sesión para acceder al módulo de Mesero.')
@@ -89,10 +89,49 @@ def mesero_view(request):
                 'listo_para_cobro': es_listo
             }
 
+    # Desglose en 4 secciones clave:
+    # 1. Comandas listas para servir (Cocina terminó el plato)
+    comandas_listas = Comanda.objects.filter(
+        estado__in=['listo', 'LISTO'],
+        pagada=False
+    ).select_related('mesa_rel').order_by('-fecha')
+
+    # 2. Mesas disponibles para asignar y tomar pedido
+    mesas_disponibles = mesas.filter(estado__in=['disponible', 'desocupada'])
+
+    # 3. Mesas ocupadas con comida en preparación o esperando comida
+    mesas_ocupadas = mesas.filter(estado='ocupada', comida_entregada=False)
+
+    # 4. Mesas servidas (comida entregada) o listas para cobro en caja
+    mesas_servidas = mesas.filter(
+        Q(estado='ocupada', comida_entregada=True) |
+        Q(estado__in=['LISTO_PARA_COBRO', 'PENDIENTE_PAGO'])
+    )
+
+    count_listos_servir = comandas_listas.count()
+    count_disponibles = mesas_disponibles.count()
+    count_ocupadas = mesas_ocupadas.count()
+    count_servidas = mesas_servidas.count()
+
+    # Pestaña activa persistente
+    tab_activa = (request.GET.get('tab') or request.session.get('tab_mesero_activa') or '').strip().lower()
+    if tab_activa not in ['listos_servir', 'disponibles', 'ocupadas', 'servidas']:
+        tab_activa = 'listos_servir' if count_listos_servir > 0 else 'disponibles'
+    request.session['tab_mesero_activa'] = tab_activa
+
     context = {
         'usuario': usuario.get('nombre'),
         'rol': usuario.get('rol'),
+        'tab_activa': tab_activa,
         'mesas': mesas,
+        'comandas_listas': comandas_listas,
+        'mesas_disponibles': mesas_disponibles,
+        'mesas_ocupadas': mesas_ocupadas,
+        'mesas_servidas': mesas_servidas,
+        'count_listos_servir': count_listos_servir,
+        'count_disponibles': count_disponibles,
+        'count_ocupadas': count_ocupadas,
+        'count_servidas': count_servidas,
         'productos': productos,
         'productos_json': json.dumps(productos_data),
         'comandas_activas': comandas_por_mesa
@@ -392,5 +431,159 @@ def mesero_cambiar_mesa(request):
         return JsonResponse({'success': False, 'error': 'Mesa no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def mesero_marcar_entregado(request):
+    """
+    Marca una comanda de cocina como 'entregado' y actualiza mesa.comida_entregada = True.
+    - Exclusivo para 'mesero' y 'administrador'.
+    - Requiere método POST.
+    - Actualización atómica en base de datos y registro en HistorialAccion.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido. Se requiere POST.'}, status=405)
+
+    usuario = obtener_usuario(request)
+    if not usuario or usuario.get('rol') not in ['mesero', 'administrador']:
+        return JsonResponse({'success': False, 'error': 'No autorizado para marcar comandas como servidas.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        comanda_id = data.get('comanda_id')
+        mesa_id = data.get('mesa_id')
+
+        if not comanda_id and not mesa_id:
+            return JsonResponse({'success': False, 'error': 'Identificador de comanda o mesa no proporcionado.'}, status=400)
+
+        with transaction.atomic():
+            comanda = None
+            if comanda_id:
+                comanda = Comanda.objects.select_for_update().filter(id=comanda_id).first()
+            if not comanda and mesa_id:
+                comanda = Comanda.objects.select_for_update().filter(
+                    Q(mesa_rel_id=mesa_id) | Q(mesa__iexact=f"Mesa {mesa_id}"),
+                    pagada=False
+                ).last()
+
+            mesa = None
+            if comanda and comanda.mesa_rel:
+                mesa = Mesa.objects.select_for_update().filter(id=comanda.mesa_rel_id).first()
+            elif mesa_id:
+                mesa = Mesa.objects.select_for_update().filter(id=mesa_id).first()
+            elif comanda and comanda.mesa:
+                mesa = Mesa.objects.select_for_update().filter(nombre=comanda.mesa).first()
+
+            if comanda:
+                comanda.estado = 'entregado'
+                comanda.save(update_fields=['estado'])
+
+            if mesa:
+                mesa.comida_entregada = True
+                mesa.save(update_fields=['comida_entregada'])
+
+            if not comanda and not mesa:
+                return JsonResponse({'success': False, 'error': 'No se encontró la comanda ni la mesa especificada.'}, status=404)
+
+        usuario_obj = Usuario.objects.filter(id=usuario.get('id')).first()
+        folio_str = comanda.folio if comanda else 'N/A'
+        mesa_str = mesa.nombre if mesa else (comanda.mesa if comanda else 'Mesa')
+        registrar_auditoria(
+            usuario_obj,
+            'ACTUALIZAR',
+            'Comandas',
+            f"Comanda {folio_str} ({mesa_str}) marcada como SERVIDA / ENTREGADA por {usuario_obj.nombre if usuario_obj else 'Mesero'}."
+        )
+
+        return JsonResponse({
+            'success': True,
+            'comanda_id': comanda.id if comanda else None,
+            'mesa_id': mesa.id if mesa else None,
+            'mesa_nombre': mesa_str,
+            'folio': folio_str,
+            'estado': 'entregado',
+            'comida_entregada': True,
+            'message': f'Comanda {folio_str} de {mesa_str} marcada como Servido / Entregado.'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def api_mesero_estado(request):
+    """
+    Endpoint JSON para sincronización periódica y polling en tiempo real del módulo de Mesero (cada 5-8 seg).
+    Retorna contadores de cada tab, lista de comandas listas para servir y detalle de mesas de salón.
+    Acceso restringido: Exclusivo para 'mesero' y 'administrador'.
+    """
+    usuario = obtener_usuario(request)
+    if not usuario or usuario.get('rol') not in ['mesero', 'administrador']:
+        return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+
+    # 1. Comandas listas para servir
+    comandas_listas_qs = Comanda.objects.filter(
+        estado__in=['listo', 'LISTO'],
+        pagada=False
+    ).select_related('mesa_rel').order_by('-fecha')
+
+    comandas_listas_data = []
+    for cmd in comandas_listas_qs:
+        comandas_listas_data.append({
+            'id': cmd.id,
+            'folio': cmd.folio,
+            'mesa': cmd.mesa,
+            'mesa_id': cmd.mesa_rel_id if cmd.mesa_rel else None,
+            'mesa_numero': cmd.mesa_rel.numero if cmd.mesa_rel else None,
+            'items': cmd.items,
+            'notas': cmd.notas,
+            'total': float(cmd.total),
+            'hora': cmd.fecha.strftime("%H:%M") if cmd.fecha else '',
+            'es_reemision': cmd.es_reemision,
+            'motivo_reemision': cmd.motivo_reemision or '',
+        })
+
+    # 2. Mesas de salón y contadores
+    mesas_all = Mesa.objects.all().order_by('numero')
+    count_disponibles = mesas_all.filter(estado__in=['disponible', 'desocupada']).count()
+    count_ocupadas = mesas_all.filter(estado='ocupada', comida_entregada=False).count()
+    count_servidas = mesas_all.filter(
+        Q(estado='ocupada', comida_entregada=True) |
+        Q(estado__in=['LISTO_PARA_COBRO', 'PENDIENTE_PAGO'])
+    ).count()
+    count_listos_servir = len(comandas_listas_data)
+
+    mesas_data = []
+    for m in mesas_all:
+        cmd_activa = Comanda.objects.filter(Q(mesa_rel=m) | Q(mesa_rel_id=m.id), pagada=False).last()
+        if not cmd_activa:
+            cmd_activa = Comanda.objects.filter(mesa=m.nombre, pagada=False).last()
+
+        mesas_data.append({
+            'id': m.id,
+            'numero': m.numero,
+            'nombre': m.nombre,
+            'capacidad': m.capacidad,
+            'estado': m.estado,
+            'comida_entregada': m.comida_entregada,
+            'comanda': {
+                'id': cmd_activa.id,
+                'folio': cmd_activa.folio,
+                'total': float(cmd_activa.total),
+                'estado': cmd_activa.estado,
+                'notas': cmd_activa.notas,
+                'items': cmd_activa.items,
+            } if cmd_activa else None
+        })
+
+    return JsonResponse({
+        'success': True,
+        'contadores': {
+            'listos_servir': count_listos_servir,
+            'disponibles': count_disponibles,
+            'ocupadas': count_ocupadas,
+            'servidas': count_servidas,
+        },
+        'comandas_listas': comandas_listas_data,
+        'mesas': mesas_data
+    })
+
 
 

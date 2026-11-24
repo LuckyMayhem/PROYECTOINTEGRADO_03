@@ -1,18 +1,171 @@
 /* ==========================================================================
    SafariPOS — Estilos Módulo de Mesero (mesero.html)
    Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   Barra de pestañas (Tabs) estilo navegador Chrome equivalente a Cocina
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BARRA DE NAVEGACIÓN SUPERIOR CON PESTAÑAS ESTILO NAVEGADOR CHROME (DARK)
+   -------------------------------------------------------------------------- */
+
+.chrome-tabstrip-container {
+    background-color: #161616;
+    border: 1px solid #2a2a2a;
+    border-bottom: none;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    padding: 0.5rem 0.75rem 0 0.75rem;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.chrome-tabstrip {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.chrome-tabstrip::-webkit-scrollbar {
+    height: 4px;
+}
+
+.chrome-tabstrip::-webkit-scrollbar-thumb {
+    background: #3e3e3e;
+    border-radius: 4px;
+}
+
+/* Pestaña individual */
+.chrome-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.15rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #9aa0a6;
+    background-color: #242424;
+    border: 1px solid #2e2e2e;
+    border-bottom: none;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    outline: none;
+}
+
+.chrome-tab:hover {
+    background-color: #2f2f2f;
+    color: #f1f3f4;
+}
+
+/* Pestaña Activa estilo Google Chrome Dark + Acento Dorado Safari */
+.chrome-tab.active {
+    background-color: var(--safari-surface-dark, #1E1E1E) !important;
+    color: var(--safari-gold, #F5B041) !important;
+    font-weight: 700;
+    border-color: #383838 #383838 var(--safari-surface-dark, #1E1E1E) !important;
+    border-top: 3px solid var(--safari-gold, #F5B041) !important;
+    border-bottom: 2px solid var(--safari-surface-dark, #1E1E1E) !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+    margin-bottom: -1px;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+}
+
+/* Tab 1: Listos para Servir (Prioritario con acento verde esmeralda brillante) */
+.chrome-tab.chrome-tab-listos {
+    border-top: 3px solid #28a745;
+}
+
+.chrome-tab.chrome-tab-listos.active {
+    border-top: 3px solid #28a745 !important;
+    color: #5dd879 !important;
+}
+
+/* Contadores numéricos en las pestañas */
+.tab-counter {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+/* Animación de pulso para llamadas de atención prioritarias */
+@keyframes pulseGlow {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.85; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pulse {
+    animation: pulseGlow 1.8s infinite ease-in-out;
+}
+
+/* --------------------------------------------------------------------------
+   2. CONTENIDO PRINCIPAL Y PANELES POR PESTAÑA
+   -------------------------------------------------------------------------- */
+
+.tab-content-panel {
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid #2a2a2a;
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    min-height: 480px;
+}
+
+/* --------------------------------------------------------------------------
+   3. TARJETAS DE SALÓN Y COMANDAS (MESERO CARDS)
+   -------------------------------------------------------------------------- */
 
 .mesa-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    background-color: var(--safari-surface-dark, #1E1E1E);
-    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    background-color: #242424;
+    border: 1px solid #333333;
     color: #F8F9FA;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .mesa-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.mesa-card .card-header {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #2e2e2e;
+    color: #F8F9FA;
+    padding: 0.65rem 0.9rem;
+}
+
+.mesa-card-listo {
+    border: 2px solid #28a745 !important;
+    background: linear-gradient(180deg, #1f2b20 0%, #1e1e1e 100%) !important;
+    box-shadow: 0 0 12px rgba(40, 167, 69, 0.25);
+}
+
+.mesa-card-ocupada {
+    border: 1px solid #dc3545;
+}
+
+.mesa-card-disponible {
+    border: 1px solid #198754;
+}
+
+.mesa-card-servida {
+    border: 1px solid #0dcaf0;
 }
 
 /* Contenedores compactos estilo ListView de Android */
@@ -21,7 +174,13 @@
     overflow-y: auto;
     border: 1px solid var(--safari-border-dark, #2E2E2E);
     border-radius: 6px;
-    background-color: var(--safari-surface-dark, #1E1E1E);
+    background-color: #1a1a1a;
     color: #F8F9FA;
     -webkit-overflow-scrolling: touch;
+}
+
+.empty-tab-state {
+    padding: 3.5rem 1rem;
+    text-align: center;
+    color: #8c8c8c;
 }

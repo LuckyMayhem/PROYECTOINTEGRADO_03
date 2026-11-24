@@ -162,24 +162,54 @@
                             </button>
                         </h5>
 
-                        <!-- Selector de mesa/ubicación y mesero -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-sm-6">
-                                <label for="selectMesa" class="form-label small fw-bold text-muted text-uppercase mb-1">Ubicación</label>
-                                <select class="form-select form-select-sm" id="selectMesa">
-                                    <option value="Barra Principal" selected>Barra Principal</option>
-                                    <option value="Para Llevar">Para Llevar</option>
-                                    <option value="Terraza Barra">Terraza Barra</option>
-                                </select>
+                        <!-- Selector de Asignación de Mesa Disponible y Mesero -->
+                        <div class="p-2 mb-3 selector-mesa-box">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="filtroMesaAsignar" class="form-label small fw-bold text-muted text-uppercase mb-0">
+                                    <i class="bi bi-geo-alt-fill text-warning me-1"></i> Asignar Mesa Disponible
+                                </label>
+                                <span class="badge bg-secondary font-2xs" id="badgeTotalMesasDisponibles">
+                                    {{ mesas_disponibles|length }} disponible{{ mesas_disponibles|length|pluralize }}
+                                </span>
                             </div>
-                            <div class="col-sm-6">
-                                <label for="selectMesero" class="form-label small fw-bold text-muted text-uppercase mb-1">Atendido Por</label>
-                                <select class="form-select form-select-sm" id="selectMesero">
-                                    <option value="">Cajero Directo</option>
-                                    {% for m in meseros %}
-                                    <option value="{{ m.id }}">{{ m.nombre }}</option>
-                                    {% endfor %}
-                                </select>
+
+                            <!-- Input de búsqueda / filtrado rápido en tiempo real para mesas -->
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                <input type="text" id="filtroMesaAsignar" class="form-control" placeholder="Buscar mesa por número o nombre (ej: 4, Terraza)...">
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimpiarFiltroMesa" title="Limpiar búsqueda de mesa">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <!-- Selector / Lista desplegable limpia de mesas disponibles -->
+                            <select class="form-select form-select-sm mb-2" id="selectMesaAsignar">
+                                <option value="" selected>🍽️ Sin mesa / Retiro en caja</option>
+                                {% for m in mesas_disponibles %}
+                                <option value="{{ m.id }}" data-numero="{{ m.numero }}" data-nombre="{{ m.nombre }}" data-capacidad="{{ m.capacidad }}">
+                                    {{ m.nombre }} ({{ m.capacidad }} pers.)
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <label for="selectMesa" class="form-label font-2xs fw-bold text-muted text-uppercase mb-1">Ubicación / Modalidad</label>
+                                    <select class="form-select form-select-sm" id="selectMesa">
+                                        <option value="Barra Principal" selected>Barra Principal</option>
+                                        <option value="Para Llevar">Para Llevar</option>
+                                        <option value="Terraza Barra">Terraza Barra</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="selectMesero" class="form-label font-2xs fw-bold text-muted text-uppercase mb-1">Atendido Por</label>
+                                    <select class="form-select form-select-sm" id="selectMesero">
+                                        <option value="">Cajero Directo</option>
+                                        {% for m in meseros %}
+                                        <option value="{{ m.id }}">{{ m.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -679,6 +709,7 @@
 
     <!-- Script de Datos y Lógica Modular -->
     <script id="productos-data" type="application/json">{{ productos_json|safe }}</script>
+    <script id="mesas-disponibles-data" type="application/json">{{ mesas_disponibles_json|safe }}</script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/cuadratura.js' %}"></script>
     <script src="{% static 'js/caja.js' %}"></script>

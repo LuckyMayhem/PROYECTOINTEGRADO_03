@@ -93,6 +93,17 @@ def cajero_view(request):
     cajeros = Usuario.objects.filter(rol__in=['cajero', 'administrador']).order_by('nombre')
     meseros = Usuario.objects.filter(rol='mesero').order_by('nombre')
     mesas = Mesa.objects.all().order_by('numero')
+    mesas_disponibles = Mesa.objects.filter(estado='disponible').order_by('numero')
+    mesas_disponibles_data = [
+        {
+            'id': m.id,
+            'numero': m.numero,
+            'nombre': m.nombre,
+            'capacidad': m.capacidad,
+            'estado': m.estado
+        }
+        for m in mesas_disponibles
+    ]
 
     # Identificar mesas con pedidos/cuentas pendientes (ocupadas o esperando cobro)
     mesas_con_cuenta = []
@@ -131,6 +142,8 @@ def cajero_view(request):
         'cajeros': cajeros,
         'meseros': meseros,
         'mesas': mesas,
+        'mesas_disponibles': mesas_disponibles,
+        'mesas_disponibles_json': json.dumps(mesas_disponibles_data),
         'mesas_con_cuenta': mesas_con_cuenta,
         'total_ventas_turno': total_ventas_turno,
         'total_efectivo': total_efectivo,
@@ -204,8 +217,13 @@ def cajero_registrar_venta(request):
         mesero_id = data.get('mesero_id')
         mesero_obj = Usuario.objects.filter(id=mesero_id).first() if mesero_id else None
 
-        mesa_id = data.get('mesa_id')
-        mesa_obj = Mesa.objects.filter(id=mesa_id).first() if mesa_id else Mesa.objects.filter(nombre=mesa).first()
+        raw_mesa_id = data.get('mesa_id')
+        mesa_id = None
+        if raw_mesa_id not in [None, '', 0, '0', 'sin_mesa']:
+            m_id, id_valido, _ = validar_entero_estricto(raw_mesa_id, nombre_campo='ID de mesa', permitir_cero=False)
+            if not id_valido:
+                return JsonResponse({'success': False, 'error': 'Identificador de mesa no válido.'}, status=400)
+            mesa_id = m_id
 
         if not items or not isinstance(items, list):
             return JsonResponse({'success': False, 'error': 'El carrito está vacío o el formato de ítems no es válido.'}, status=400)
@@ -245,6 +263,22 @@ def cajero_registrar_venta(request):
                         'error': f'Stock insuficiente para "{prod.nombre}". Solicitado: {cant}, disponible: {prod.stock}.'
                     }, status=400)
 
+            mesa_obj = None
+            if mesa_id:
+                mesa_obj = Mesa.objects.select_for_update().filter(id=mesa_id).first()
+                if not mesa_obj:
+                    return JsonResponse({'success': False, 'error': f'Mesa #{mesa_id} no encontrada en la base de datos.'}, status=400)
+                if mesa_obj.estado != 'disponible':
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'La mesa "{mesa_obj.nombre}" no está disponible (estado actual: {mesa_obj.estado}). Por favor, seleccione otra mesa.'
+                    }, status=400)
+
+                # Asignar la mesa y cambiar su estado a 'ocupada'
+                mesa_obj.estado = 'ocupada'
+                mesa_obj.comida_entregada = False
+                mesa_obj.save(update_fields=['estado', 'comida_entregada'])
+
             total_calculado = Decimal('0.00')
             detalle_texto = []
             productos_detalle = []
@@ -265,15 +299,18 @@ def cajero_registrar_venta(request):
                 items_limpios_json.append({'id': prod.id, 'nombre': prod.nombre, 'cantidad': cant, 'precio': float(precio_bd), 'stock_descontado': True})
 
             total_final = total_calculado
+            tipo_venta_final = 'mesa' if mesa_obj else 'barra'
+            tipo_pedido_final = 'mesa' if mesa_obj else 'barra'
+            mesa_nombre_final = mesa_obj.nombre if mesa_obj else (data.get('mesa') or 'Barra Principal')
 
-            # 3. Crear Venta inmediata vinculada a la caja abierta (tipo_venta = 'barra')
+            # 3. Crear Venta inmediata vinculada a la caja abierta
             usuario_obj = Usuario.objects.filter(id=usuario_sess.get('id')).first()
             venta = Venta.objects.create(
                 usuario=usuario_obj,
                 mesero=mesero_obj,
                 control_caja=caja,
                 metodo_pago=metodo_pago,
-                tipo_venta='barra',
+                tipo_venta=tipo_venta_final,
                 mesa=mesa_obj,
                 notas=notas,
                 total=total_final
@@ -290,25 +327,26 @@ def cajero_registrar_venta(request):
             # 4. Crear Comanda inmediata para Cocina con notas sanitizadas
             comanda = Comanda.objects.create(
                 folio=venta.folio,
-                mesa=mesa_obj.nombre if mesa_obj else mesa,
+                mesa=mesa_nombre_final,
                 mesa_rel=mesa_obj,
-                mesero=usuario_obj,
+                mesero=mesero_obj or usuario_obj,
                 venta=venta,
                 items=", ".join(detalle_texto),
                 items_json=json.dumps(items_limpios_json),
                 notas=notas,
-                tipo_pedido='barra',
+                tipo_pedido=tipo_pedido_final,
                 pagada=True,
                 total=total_final,
                 estado='preparacion'
             )
 
         # 5. Registrar auditoría
+        desc_mesa = f"asignada a {mesa_nombre_final}" if mesa_obj else f"en barra ({mesa_nombre_final})"
         registrar_auditoria(
             usuario_obj,
             'CREAR',
             'Ventas',
-            f"Venta en barra #{venta.id} ({venta.folio}) - Total: ${total_final:,.0f} CLP ({metodo_pago}) por {usuario_obj.nombre}"
+            f"Venta #{venta.id} ({venta.folio}) {desc_mesa} - Total: ${total_final:,.0f} CLP ({metodo_pago}) por {usuario_obj.nombre}"
         )
 
         return JsonResponse({
@@ -316,9 +354,11 @@ def cajero_registrar_venta(request):
             'folio': venta.folio,
             'total': float(total_final),
             'metodo_pago': metodo_pago,
-            'tipo_venta': 'barra',
+            'tipo_venta': tipo_venta_final,
+            'mesa': mesa_nombre_final,
+            'mesa_id': mesa_obj.id if mesa_obj else None,
             'notas': notas,
-            'message': f'Venta en barra registrada y boleta {venta.folio} emitida al instante.'
+            'message': f'Venta registrada y asignada a {mesa_nombre_final}. Boleta {venta.folio} emitida.' if mesa_obj else f'Venta en barra registrada y boleta {venta.folio} emitida al instante.'
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -590,7 +630,41 @@ def api_mesas_con_cuenta(request):
                 'listo_para_cobro': es_listo
             })
 
-    return JsonResponse({'success': True, 'mesas': mesas_data})
+    mesas_disponibles_data = [
+        {
+            'id': m.id,
+            'numero': m.numero,
+            'nombre': m.nombre,
+            'capacidad': m.capacidad,
+            'estado': m.estado
+        }
+        for m in Mesa.objects.filter(estado='disponible').order_by('numero')
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'mesas': mesas_data,
+        'mesas_disponibles': mesas_disponibles_data
+    })
+
+
+def api_mesas_disponibles(request):
+    """Retorna la lista de mesas cuyo estado sea exclusivamente 'disponible' en formato JSON."""
+    usuario = obtener_usuario(request)
+    if not usuario or usuario.get('rol') not in ['cajero', 'administrador', 'mesero']:
+        return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+
+    mesas_disponibles_data = [
+        {
+            'id': m.id,
+            'numero': m.numero,
+            'nombre': m.nombre,
+            'capacidad': m.capacidad,
+            'estado': m.estado
+        }
+        for m in Mesa.objects.filter(estado='disponible').order_by('numero')
+    ]
+    return JsonResponse({'success': True, 'mesas_disponibles': mesas_disponibles_data})
 
 
 def api_resumen_caja_actual(request):

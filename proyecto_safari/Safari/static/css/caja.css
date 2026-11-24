@@ -80,6 +80,34 @@ body.caja-body {
     background-color: var(--safari-surface-dark, #1E1E1E);
 }
 
+/* Selector de Mesa Disponible en Caja */
+.selector-mesa-box {
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    border-radius: 8px;
+}
+
+.selector-mesa-box .input-group-text {
+    background-color: #262626;
+    border-color: var(--safari-border-dark, #2E2E2E);
+    color: var(--safari-gold, #F5B041);
+}
+
+.selector-mesa-box .form-control,
+.selector-mesa-box .form-select {
+    background-color: #262626;
+    border-color: var(--safari-border-dark, #2E2E2E);
+    color: #F8F9FA;
+}
+
+.selector-mesa-box .form-control:focus,
+.selector-mesa-box .form-select:focus {
+    border-color: var(--safari-gold, #F5B041);
+    box-shadow: 0 0 0 0.2rem rgba(245, 176, 65, 0.25);
+    background-color: #262626;
+    color: #F8F9FA;
+}
+
 /* REGLA CLAVE: Solo imprimir el comprobante térmico */
 @media print {
     body * {

@@ -5093,6 +5093,323 @@ class PruebasControlStockYLimitesNumericosTestCase(TestCase):
         self.assertEqual(res_over.status_code, 400)
 
 
+# ==============================================================================
+# SUITE DE PRUEBAS: ASIGNACIÓN DE MESAS DISPONIBLES EN TERMINAL DE CAJA
+# ==============================================================================
+
+class AsignacionMesaCajeroTestCase(TestCase):
+    """
+    Verifica la asignación de mesas disponibles al registrar una venta o pedido en caja:
+    - Contexto de cajero.html incluye 'mesas_disponibles' y 'mesas_disponibles_json'.
+    - Endpoint api_mesas_disponibles retorna únicamente mesas con estado 'disponible'.
+    - Registro de venta en caja con mesa asignada ocupa la mesa de forma atómica y vincula Venta y Comanda.
+    - Bloqueo de asignación si la mesa ya no está disponible (estado != 'disponible').
+    - Venta en mostrador / para llevar sin mesa funciona sin alterar estado de mesas.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.cajero = Usuario.objects.create(
+            nombre="Cajero Mesas Test",
+            correo="cajeromesas@safari.cl",
+            username="cajeromesas",
+            password="password123",
+            rol="cajero",
+            estado="activo"
+        )
+        self.caja_abierta = ControlCaja.objects.create(
+            cajero_responsable=self.cajero,
+            monto_inicial=Decimal("50000.00"),
+            abierta=True,
+            estado='ABIERTA'
+        )
+        self.mesa_disp1 = Mesa.objects.create(numero=10, nombre="Mesa 10", capacidad=4, estado="disponible")
+        self.mesa_disp2 = Mesa.objects.create(numero=11, nombre="Mesa 11", capacidad=2, estado="disponible")
+        self.mesa_ocupada = Mesa.objects.create(numero=12, nombre="Mesa 12", capacidad=6, estado="ocupada")
+        self.producto = Producto.objects.create(
+            nombre="Hamburguesa Safari",
+            descripcion="Hamburguesa artesanal",
+            precio=Decimal("6500.00"),
+            stock=25
+        )
+
+    def _autenticar(self, usuario):
+        s = self.client.session
+        s['usuario_id'] = usuario.id
+        s['usuario'] = {'id': usuario.id, 'nombre': usuario.nombre, 'rol': usuario.rol}
+        s['rol'] = usuario.rol
+        s.save()
+
+    def test_cajero_view_contexto_mesas_disponibles(self):
+        """Verifica que la vista cajero_view incluya mesas disponibles en el contexto."""
+        self._autenticar(self.cajero)
+        res = self.client.get('/cajero/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('mesas_disponibles', res.context)
+        self.assertIn('mesas_disponibles_json', res.context)
+
+        mesas_ctx = res.context['mesas_disponibles']
+        mesas_ids = [m.id for m in mesas_ctx]
+        self.assertIn(self.mesa_disp1.id, mesas_ids)
+        self.assertIn(self.mesa_disp2.id, mesas_ids)
+        self.assertNotIn(self.mesa_ocupada.id, mesas_ids)
+
+    def test_api_mesas_disponibles_endpoint(self):
+        """Verifica que /api/mesas-disponibles/ retorne en JSON solo las mesas disponibles."""
+        self._autenticar(self.cajero)
+        res = self.client.get('/api/mesas-disponibles/')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+        mesas_ids = [m['id'] for m in data.get('mesas_disponibles', [])]
+        self.assertIn(self.mesa_disp1.id, mesas_ids)
+        self.assertIn(self.mesa_disp2.id, mesas_ids)
+        self.assertNotIn(self.mesa_ocupada.id, mesas_ids)
+
+    def test_cajero_registrar_venta_con_mesa_disponible_exitosa(self):
+        """Registrar venta asignando mesa disponible debe cambiar su estado a ocupada y asociar venta y comanda."""
+        self._autenticar(self.cajero)
+        payload = {
+            'tipo_venta': 'mesa',
+            'mesa_id': self.mesa_disp1.id,
+            'metodo_pago': 'efectivo',
+            'notas': 'Sin cebolla',
+            'items': [{'id': self.producto.id, 'cantidad': 2}]
+        }
+        res = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(data.get('tipo_venta'), 'mesa')
+        self.assertEqual(data.get('mesa_id'), self.mesa_disp1.id)
+
+        # La mesa debe haber pasado a 'ocupada'
+        self.mesa_disp1.refresh_from_db()
+        self.assertEqual(self.mesa_disp1.estado, 'ocupada')
+
+        # Venta y Comanda deben estar asociadas a la mesa
+        venta = Venta.objects.latest('id')
+        self.assertEqual(venta.mesa_id, self.mesa_disp1.id)
+        self.assertEqual(venta.tipo_venta, 'mesa')
+
+        comanda = Comanda.objects.latest('id')
+        self.assertEqual(comanda.mesa_rel_id, self.mesa_disp1.id)
+        self.assertEqual(comanda.tipo_pedido, 'mesa')
+
+    def test_cajero_registrar_venta_bloqueo_mesa_no_disponible(self):
+        """Si la mesa seleccionada ya está ocupada o no disponible, debe rechazar la venta con error 400."""
+        self._autenticar(self.cajero)
+        payload = {
+            'tipo_venta': 'mesa',
+            'mesa_id': self.mesa_ocupada.id,
+            'metodo_pago': 'efectivo',
+            'items': [{'id': self.producto.id, 'cantidad': 1}]
+        }
+        res = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        data = res.json()
+        self.assertFalse(data.get('success'))
+        self.assertIn('no está disponible', data.get('error', ''))
+
+    def test_cajero_registrar_venta_sin_mesa_mostrador(self):
+        """Si no se selecciona mesa, debe registrar como venta en barra / para llevar."""
+        self._autenticar(self.cajero)
+        payload = {
+            'tipo_venta': 'barra',
+            'mesa_id': None,
+            'mesa': 'Para Llevar',
+            'metodo_pago': 'tarjeta',
+            'items': [{'id': self.producto.id, 'cantidad': 1}]
+        }
+        res = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(data.get('tipo_venta'), 'barra')
+
+        venta = Venta.objects.latest('id')
+        self.assertIsNone(venta.mesa)
+        self.assertEqual(venta.tipo_venta, 'barra')
+
+
+# ==============================================================================
+# SUITE DE PRUEBAS: MÓDULO DE MESERO CON NAVEGACIÓN POR TABS Y POLLING
+# ==============================================================================
+
+class ModuloMeseroTabsTestCase(TestCase):
+    """
+    Verifica el rediseño y lógica modular del módulo de Mesero:
+    - Navegación por 4 pestañas (Listos para Servir, Mesas Disponibles, Mesas Ocupadas, Mesas Servidas/Cobro).
+    - Conteo dinámico de pedidos y mesas por fase.
+    - Endpoint JSON api_mesero_estado para polling en tiempo real.
+    - Acción de marcar comanda como servida/entregada (actualiza comanda a 'entregado' y mesa.comida_entregada = True).
+    - Restricción estricta de rol para Mesero (bloqueo a cocina, caja y stock).
+    - Bloqueo de usuarios no autorizados en los endpoints de mesero.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.mesero = Usuario.objects.create(
+            nombre="Mesero Tabs Test",
+            correo="meserotabs@safari.cl",
+            username="meserotabs",
+            password="password123",
+            rol="mesero",
+            estado="activo"
+        )
+        self.cocinero = Usuario.objects.create(
+            nombre="Cocinero Test",
+            correo="cocinerotabs@safari.cl",
+            username="cocinerotabs",
+            password="password123",
+            rol="cocinero",
+            estado="activo"
+        )
+        self.cajero = Usuario.objects.create(
+            nombre="Cajero Test",
+            correo="cajerotabs@safari.cl",
+            username="cajerotabs",
+            password="password123",
+            rol="cajero",
+            estado="activo"
+        )
+        self.mesa_disp = Mesa.objects.create(numero=20, nombre="Mesa 20", capacidad=4, estado="disponible")
+        self.mesa_ocup = Mesa.objects.create(numero=21, nombre="Mesa 21", capacidad=2, estado="ocupada", comida_entregada=False)
+        self.mesa_serv = Mesa.objects.create(numero=22, nombre="Mesa 22", capacidad=6, estado="ocupada", comida_entregada=True)
+        self.mesa_cobro = Mesa.objects.create(numero=23, nombre="Mesa 23", capacidad=4, estado="LISTO_PARA_COBRO", comida_entregada=True)
+
+        self.producto = Producto.objects.create(
+            nombre="Pizza Safari",
+            descripcion="Pizza con jamón y queso",
+            precio=Decimal("7990.00"),
+            stock=15
+        )
+
+        # Comanda lista para servir en Mesa 21
+        self.comanda_lista = Comanda.objects.create(
+            folio="COM-9901",
+            mesa=self.mesa_ocup.nombre,
+            mesa_rel=self.mesa_ocup,
+            mesero=self.mesero,
+            items="1x Pizza Safari ($7,990)",
+            items_json=json.dumps([{'id': self.producto.id, 'nombre': self.producto.nombre, 'cantidad': 1, 'precio': 7990.0}]),
+            tipo_pedido='mesa',
+            pagada=False,
+            total=Decimal("7990.00"),
+            estado='listo'
+        )
+
+    def _autenticar(self, usuario):
+        s = self.client.session
+        s['usuario_id'] = usuario.id
+        s['usuario'] = {'id': usuario.id, 'nombre': usuario.nombre, 'rol': usuario.rol}
+        s['rol'] = usuario.rol
+        s.save()
+
+    def test_mesero_view_contexto_tabs_y_contadores(self):
+        """Verifica que mesero_view entregue los 4 conjuntos de datos y contadores en su contexto."""
+        self._autenticar(self.mesero)
+        res = self.client.get('/mesero/')
+        self.assertEqual(res.status_code, 200)
+
+        # Verificar presencia de variables clave de las 4 pestañas
+        self.assertIn('tab_activa', res.context)
+        self.assertIn('comandas_listas', res.context)
+        self.assertIn('mesas_disponibles', res.context)
+        self.assertIn('mesas_ocupadas', res.context)
+        self.assertIn('mesas_servidas', res.context)
+
+        # Validar contadores
+        self.assertEqual(res.context['count_listos_servir'], 1)
+        self.assertEqual(res.context['count_disponibles'], 1)
+        self.assertEqual(res.context['count_ocupadas'], 1)
+        self.assertEqual(res.context['count_servidas'], 2)  # mesa_serv + mesa_cobro
+
+        # Validar membresía en cada tab
+        listos_ids = [c.id for c in res.context['comandas_listas']]
+        self.assertIn(self.comanda_lista.id, listos_ids)
+
+        disp_ids = [m.id for m in res.context['mesas_disponibles']]
+        self.assertIn(self.mesa_disp.id, disp_ids)
+
+        ocup_ids = [m.id for m in res.context['mesas_ocupadas']]
+        self.assertIn(self.mesa_ocup.id, ocup_ids)
+
+        serv_ids = [m.id for m in res.context['mesas_servidas']]
+        self.assertIn(self.mesa_serv.id, serv_ids)
+        self.assertIn(self.mesa_cobro.id, serv_ids)
+
+    def test_api_mesero_estado_polling_json(self):
+        """Verifica que el endpoint JSON /api/mesero/estado/ entregue la estructura requerida para polling."""
+        self._autenticar(self.mesero)
+        res = self.client.get('/api/mesero/estado/')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+
+        contadores = data.get('contadores', {})
+        self.assertEqual(contadores.get('listos_servir'), 1)
+        self.assertEqual(contadores.get('disponibles'), 1)
+        self.assertEqual(contadores.get('ocupadas'), 1)
+        self.assertEqual(contadores.get('servidas'), 2)
+
+        comandas_listas = data.get('comandas_listas', [])
+        self.assertEqual(len(comandas_listas), 1)
+        self.assertEqual(comandas_listas[0]['id'], self.comanda_lista.id)
+        self.assertEqual(comandas_listas[0]['folio'], self.comanda_lista.folio)
+        self.assertEqual(comandas_listas[0]['mesa'], self.mesa_ocup.nombre)
+
+    def test_mesero_marcar_entregado_actualiza_comanda_y_mesa(self):
+        """Verifica que marcar como servido cambie el estado de la comanda a 'entregado' y mesa.comida_entregada a True."""
+        self._autenticar(self.mesero)
+        payload = {'comanda_id': self.comanda_lista.id, 'mesa_id': self.mesa_ocup.id}
+        res = self.client.post('/mesero/marcar-entregado/', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get('success'))
+        self.assertEqual(data.get('estado'), 'entregado')
+        self.assertTrue(data.get('comida_entregada'))
+
+        # Comprobar en base de datos
+        self.comanda_lista.refresh_from_db()
+        self.assertEqual(self.comanda_lista.estado, 'entregado')
+
+        self.mesa_ocup.refresh_from_db()
+        self.assertTrue(self.mesa_ocup.comida_entregada)
+
+    def test_bloqueo_acceso_mesero_a_cocina_caja_y_stock(self):
+        """Verifica que el rol mesero tenga denegado el acceso a cocina, caja y stock."""
+        self._autenticar(self.mesero)
+
+        # Acceso a cocina denegado
+        res_cocina = self.client.get('/cocinero/')
+        self.assertEqual(res_cocina.status_code, 403)
+
+        # Acceso a caja denegado
+        res_caja = self.client.get('/cajero/')
+        self.assertEqual(res_caja.status_code, 403)
+
+        # Acceso a stock denegado
+        res_stock = self.client.get('/stock/')
+        self.assertEqual(res_stock.status_code, 403)
+
+    def test_bloqueo_usuarios_no_autorizados_a_mesero(self):
+        """Verifica que un rol no autorizado (ej. cocinero o anónimo) no pueda acceder a las acciones de mesero."""
+        # Usuario no autenticado
+        res_anon = self.client.post('/mesero/marcar-entregado/', data=json.dumps({'comanda_id': self.comanda_lista.id}), content_type='application/json')
+        self.assertEqual(res_anon.status_code, 403)
+
+        res_anon_api = self.client.get('/api/mesero/estado/')
+        self.assertEqual(res_anon_api.status_code, 403)
+
+        # Cocinero intentando marcar comanda servida
+        self._autenticar(self.cocinero)
+        res_cocinero = self.client.post('/mesero/marcar-entregado/', data=json.dumps({'comanda_id': self.comanda_lista.id}), content_type='application/json')
+        self.assertEqual(res_cocinero.status_code, 403)
+
+
+
+
 
 
 
