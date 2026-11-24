@@ -28,7 +28,7 @@
                     {% if mensaje %}{{ mensaje }}{% else %}La ruta o recurso al que intentas acceder no existe, ha sido movido o fue eliminado del sistema.{% endif %}
                 </p>
                 <div class="error-img-wrapper mb-4">
-                    <img src="{% static 'error404.jpg' %}" alt="Error 404" class="img-fluid error-img shadow-sm" data-fallback="{% static 'img/error404.jpg' %}">
+                    <img src="{% static 'img/error404.jpg' %}" alt="Error 404" class="img-fluid error-img shadow-sm" data-fallback="{% static 'img/error404.jpg' %}">
                 </div>
                 <div class="d-flex justify-content-center gap-2 flex-wrap error-actions">
                     {% if request.session.usuario or user.is_authenticated %}

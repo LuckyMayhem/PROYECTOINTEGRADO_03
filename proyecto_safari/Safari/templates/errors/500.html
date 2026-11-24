@@ -28,7 +28,7 @@
                     {% if mensaje %}{{ mensaje }}{% else %}Ocurrió un problema inesperado al procesar la solicitud en el servidor. El equipo técnico ha sido notificado.{% endif %}
                 </p>
                 <div class="error-img-wrapper mb-4">
-                    <img src="{% static 'img/error500.jpg' %}" alt="Error 500" class="img-fluid error-img shadow-sm" data-fallback="{% static 'error500.jpg' %}">
+                    <img src="{% static 'img/error500.jpg' %}" alt="Error 500" class="img-fluid error-img shadow-sm" data-fallback="{% static 'img/error500.jpg' %}">
                 </div>
                 <div class="d-flex justify-content-center gap-2 flex-wrap error-actions">
                     <a href="/" class="btn btn-warning btn-lg fw-bold text-dark px-4 py-2 rounded-3 shadow-sm">

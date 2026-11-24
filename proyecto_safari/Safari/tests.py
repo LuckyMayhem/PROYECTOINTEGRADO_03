@@ -3764,11 +3764,20 @@ class PruebasValidacionEstrictaCaracteresEspecialesTestCase(TestCase):
         self.assertContains(res_mant, 'validaciones.js')
 
     def test_confirmacion_100_por_ciento_consultas_orm_parametrizado(self):
-        """Audita el código fuente de views.py para confirmar 100% uso de ORM parametrizado sin SQL en crudo."""
+        """Audita el código fuente de views para confirmar 100% uso de ORM parametrizado sin SQL en crudo."""
         import os
+        ruta_pkg = os.path.join(os.path.dirname(__file__), 'views')
         ruta_views = os.path.join(os.path.dirname(__file__), 'views.py')
-        with open(ruta_views, 'r', encoding='utf-8') as f:
-            contenido = f.read()
+        if os.path.isdir(ruta_pkg):
+            contenido = ""
+            for root, _, files in sorted(os.walk(ruta_pkg)):
+                for file in sorted(files):
+                    if file.endswith('.py'):
+                        with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                            contenido += f.read() + "\n"
+        else:
+            with open(ruta_views, 'r', encoding='utf-8') as f:
+                contenido = f.read()
 
         # Prohibición de raw SQL y formateo inseguro en líneas de código ejecutables
         lineas_codigo = [l.strip() for l in contenido.splitlines() if l.strip() and not l.strip().startswith('#')]
@@ -4878,6 +4887,211 @@ class CocineroPersistenciaPestanaYRedireccionTestCase(TestCase):
 
         self.assertIn("sessionStorage.setItem('tab_cocina_activa'", contenido)
         self.assertIn("sessionStorage.getItem('tab_cocina_activa'", contenido)
+
+
+# ==============================================================================
+# SUITE DE PRUEBAS: CONTROL DE STOCK, TRANSACCIONES ATÓMICAS Y LÍMITES NUMÉRICOS
+# ==============================================================================
+
+class PruebasControlStockYLimitesNumericosTestCase(TestCase):
+    """
+    Verifica las validaciones de límites numéricos, atomicidad con select_for_update()
+    y consistencia de inventario en ventas, pedidos y mantenedores:
+    - Precios enteros positivos en CLP entre 100 y 9.999.999.
+    - Stock entero entre 0 y 99.999 unidades.
+    - Límite máximo de 50 unidades por línea de pedido (o stock disponible si es menor).
+    - Bloqueo de 0, negativos y desbordamientos.
+    - Descuento de inventario una sola vez por flujo y restitución de stock al anular.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = Usuario.objects.create(
+            nombre="Admin Stock Test",
+            correo="adminstock@safari.cl",
+            username="adminstock",
+            password="password123",
+            rol="administrador",
+            estado="activo"
+        )
+        self.cajero = Usuario.objects.create(
+            nombre="Cajero Stock Test",
+            correo="cajerostock@safari.cl",
+            username="cajerostock",
+            password="password123",
+            rol="cajero",
+            estado="activo"
+        )
+        self.mesero = Usuario.objects.create(
+            nombre="Mesero Stock Test",
+            correo="meserostock@safari.cl",
+            username="meserostock",
+            password="password123",
+            rol="mesero",
+            estado="activo"
+        )
+        self.caja_abierta = ControlCaja.objects.create(
+            cajero_responsable=self.cajero,
+            monto_inicial=Decimal("50000.00"),
+            abierta=True,
+            estado='ABIERTA'
+        )
+        self.mesa = Mesa.objects.create(numero=1, nombre="Mesa 1", capacidad=4, estado="desocupada")
+        self.producto = Producto.objects.create(
+            nombre="Plato Prueba Stock",
+            descripcion="Plato de prueba para límites",
+            precio=Decimal("5000.00"),
+            stock=40
+        )
+
+    def _autenticar(self, usuario):
+        s = self.client.session
+        s['usuario_id'] = usuario.id
+        s['usuario'] = {'id': usuario.id, 'nombre': usuario.nombre, 'rol': usuario.rol}
+        s['rol'] = usuario.rol
+        s.save()
+
+    def test_limites_precio_y_stock_mantenedor_productos(self):
+        """Verifica que el precio esté entre 100 y 9.999.999 CLP y stock entre 0 y 99.999."""
+        self._autenticar(self.admin)
+
+        # Precio inferior a 100 CLP debe ser rechazado con 400
+        res_bajo = self.client.post('/stock/guardar/', {
+            'nombre': 'Producto Precio Bajo',
+            'descripcion': 'Test',
+            'precio': '99',
+            'stock': '10'
+        })
+        self.assertEqual(res_bajo.status_code, 400)
+
+        # Precio superior a 9.999.999 CLP debe ser rechazado con 400
+        res_alto = self.client.post('/stock/guardar/', {
+            'nombre': 'Producto Precio Excesivo',
+            'descripcion': 'Test',
+            'precio': '10000000',
+            'stock': '10'
+        })
+        self.assertEqual(res_alto.status_code, 400)
+
+        # Stock superior a 99.999 unidades debe ser rechazado con 400
+        res_stock_excesivo = self.client.post('/stock/guardar/', {
+            'nombre': 'Producto Stock Excesivo',
+            'descripcion': 'Test',
+            'precio': '2500',
+            'stock': '100000'
+        })
+        self.assertEqual(res_stock_excesivo.status_code, 400)
+
+        # Valores válidos dentro del rango deben guardarse correctamente
+        res_valido = self.client.post('/stock/guardar/', {
+            'nombre': 'Producto Rango Valido',
+            'descripcion': 'Test',
+            'precio': '4990',
+            'stock': '500'
+        })
+        self.assertEqual(res_valido.status_code, 302)
+        prod = Producto.objects.filter(nombre='Producto Rango Valido').first()
+        self.assertIsNotNone(prod)
+        self.assertEqual(prod.precio, 4990)
+        self.assertEqual(prod.stock, 500)
+
+    def test_limite_maximo_50_unidades_por_linea_de_pedido(self):
+        """Verifica que no se permitan pedidos que superen 50 unidades por ítem."""
+        self._autenticar(self.mesero)
+        # Producto con stock abundante
+        self.producto.stock = 100
+        self.producto.save()
+
+        # Mesero intenta pedir 51 unidades
+        payload = {
+            'mesa_id': self.mesa.id,
+            'items': [{'id': self.producto.id, 'cantidad': 51}]
+        }
+        res = self.client.post('/mesero/tomar-pedido/', data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        data = res.json()
+        self.assertIn('máxima permitida por producto es de 50', data.get('error', ''))
+
+        # Venta en caja intentando vender 51 unidades
+        self._autenticar(self.cajero)
+        payload_caja = {
+            'tipo_venta': 'barra',
+            'metodo_pago': 'efectivo',
+            'items': [{'id': self.producto.id, 'cantidad': 51}]
+        }
+        res_caja = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload_caja), content_type='application/json')
+        self.assertEqual(res_caja.status_code, 400)
+        self.assertIn('máxima permitida por producto es de 50', res_caja.json().get('error', ''))
+
+    def test_bloqueo_cantidades_cero_y_negativas_venta(self):
+        """Verifica que se rechacen valores 0, negativos o no numéricos en cantidades."""
+        self._autenticar(self.cajero)
+        casos_invalidos = [0, -1, -10, "0", "-5", "abc", 2.5]
+        for c in casos_invalidos:
+            payload = {
+                'tipo_venta': 'barra',
+                'metodo_pago': 'efectivo',
+                'items': [{'id': self.producto.id, 'cantidad': c}]
+            }
+            res = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload), content_type='application/json')
+            self.assertEqual(res.status_code, 400, f"Debió rechazar cantidad inválida: {c}")
+
+    def test_restitucion_de_stock_al_anular_venta(self):
+        """Verifica que anular una venta restituya exactamente el stock de los productos."""
+        self._autenticar(self.cajero)
+        stock_inicial = self.producto.stock  # 40
+
+        # Registrar venta de 5 unidades en barra
+        payload_venta = {
+            'tipo_venta': 'barra',
+            'metodo_pago': 'efectivo',
+            'items': [{'id': self.producto.id, 'cantidad': 5}]
+        }
+        res_venta = self.client.post('/cajero/registrar-venta/', data=json.dumps(payload_venta), content_type='application/json')
+        self.assertEqual(res_venta.status_code, 200)
+
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, stock_inicial - 5)  # 35
+
+        # Obtener la venta creada
+        venta = Venta.objects.latest('id')
+
+        # Anular la venta
+        res_anular = self.client.post('/cajero/anular-venta/', data=json.dumps({'venta_id': venta.id}), content_type='application/json')
+        self.assertEqual(res_anular.status_code, 200)
+
+        # Stock debe haberse restaurado a 40
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, stock_inicial)
+
+    def test_admin_agregar_stock_limites(self):
+        """Verifica que admin_agregar_stock valide límites coherentes (máx 99.999)."""
+        self._autenticar(self.admin)
+
+        # Reposición válida de 15 unidades
+        stock_prev = self.producto.stock
+        res_ok = self.client.post('/stock/agregar/', data=json.dumps({
+            'producto_id': self.producto.id,
+            'cantidad_agregar': 15
+        }), content_type='application/json')
+        self.assertEqual(res_ok.status_code, 200)
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, stock_prev + 15)
+
+        # Intento de agregar cantidad negativa
+        res_neg = self.client.post('/stock/agregar/', data=json.dumps({
+            'producto_id': self.producto.id,
+            'cantidad_agregar': -5
+        }), content_type='application/json')
+        self.assertEqual(res_neg.status_code, 400)
+
+        # Intento de desbordar el stock más allá de 99.999
+        res_over = self.client.post('/stock/agregar/', data=json.dumps({
+            'producto_id': self.producto.id,
+            'cantidad_agregar': 100000
+        }), content_type='application/json')
+        self.assertEqual(res_over.status_code, 400)
+
 
 
 

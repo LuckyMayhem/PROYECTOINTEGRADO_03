@@ -250,7 +250,7 @@ class Comanda(models.Model):
     tipo_pedido = models.CharField(max_length=20, default='barra', help_text="'barra' o 'mesa'")
     pagada = models.BooleanField(default=False)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    estado = models.CharField(max_length=20, default='preparacion', help_text="'en_espera', 'preparacion', 'PREPARANDO', 'listo', 'LISTO', 'entregado', 'ENTREGADO', 'RE_ORDEN', 'LISTO_PARA_COBRO'")
+    estado = models.CharField(max_length=20, default='preparacion', help_text="'en_espera', 'preparacion', 'PREPARANDO', 'listo', 'LISTO', 'entregado', 'ENTREGADO', 'RE_ORDEN'")
     es_reemision = models.BooleanField(default=False, help_text="Indica si la comanda fue re-emitida para cambios o recalentados")
     motivo_reemision = models.CharField(max_length=150, blank=True, null=True, help_text="Motivo de la re-emisión o re-orden")
     fecha = models.DateTimeField(auto_now_add=True)

@@ -1,24 +1,32 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized files
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
 
-# Django stuff:
-*.log
-local_settings.py
+# Django staticfiles and media
+staticfiles/
+media/
+
+# Environment variables & secrets (NUNCA commitear .env real)
+.env
+!.env.example
+
+# Databases
+*.sqlite3
 db.sqlite3
-db.sqlite3-journal
-gunicorn.sock
+*.sqlite3-journal
 
-# Entornos virtuales
+# Virtual environments
 venv/
 env/
 .venv/
 
-# Variables de entorno secretas (NUNCA commitear .env real)
-.env
+# Server / Process / Logs
+*.log
+gunicorn.sock
 
-# Archivos del sistema operativo y editores
+# OS and Editor files
 .DS_Store
 Thumbs.db
 .vscode/

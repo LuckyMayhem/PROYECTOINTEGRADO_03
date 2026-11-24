@@ -88,8 +88,9 @@
         const nueva = actual + delta;
 
         if (nueva < 0) return;
-        if (nueva > prod.stock) {
-            alert(`Stock máximo disponible para ${prod.nombre} es ${prod.stock}.`);
+        const cantMax = Math.min(50, prod.stock);
+        if (nueva > cantMax) {
+            alert(`Límite máximo por pedido para "${prod.nombre}" es ${cantMax} unidades (máx 50 o stock disponible).`);
             return;
         }
 

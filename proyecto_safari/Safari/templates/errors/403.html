@@ -28,7 +28,7 @@
                     {% if mensaje %}{{ mensaje }}{% else %}No tienes los permisos requeridos para acceder a este módulo. Tu rol actual no está autorizado para ver esta sección.{% endif %}
                 </p>
                 <div class="error-img-wrapper mb-4">
-                    <img src="{% static 'error403.jpg' %}" alt="Error 403" class="img-fluid error-img shadow-sm" data-fallback="{% static 'img/error403.jpg' %}">
+                    <img src="{% static 'img/error403.jpg' %}" alt="Error 403" class="img-fluid error-img shadow-sm" data-fallback="{% static 'img/error403.jpg' %}">
                 </div>
                 <div class="d-flex justify-content-center gap-2 flex-wrap error-actions">
                     {% if request.session.usuario or user.is_authenticated %}

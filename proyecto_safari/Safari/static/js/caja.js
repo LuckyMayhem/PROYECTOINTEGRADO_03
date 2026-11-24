@@ -90,12 +90,18 @@
             return;
         }
 
+        const cantMax = Math.min(50, prod.stock);
+        if (cantMax <= 0) {
+            mostrarAlerta('danger', `El producto "${prod.nombre}" no tiene stock disponible.`);
+            return;
+        }
+
         const itemEnCarrito = carrito.find(i => i.id === prodId);
         if (itemEnCarrito) {
-            if (itemEnCarrito.cantidad < prod.stock) {
+            if (itemEnCarrito.cantidad < cantMax) {
                 itemEnCarrito.cantidad += 1;
             } else {
-                mostrarAlerta('warning', `Stock máximo alcanzado para "${prod.nombre}" (${prod.stock} un.).`);
+                mostrarAlerta('warning', `Límite máximo alcanzado para "${prod.nombre}" (${cantMax} un., máx 50 por pedido).`);
             }
         } else {
             carrito.push({
@@ -113,12 +119,13 @@
         const item = carrito.find(i => i.id === prodId);
         if (!item) return;
 
+        const cantMax = Math.min(50, item.stock);
         item.cantidad += delta;
         if (item.cantidad <= 0) {
             carrito = carrito.filter(i => i.id !== prodId);
-        } else if (item.cantidad > item.stock) {
-            item.cantidad = item.stock;
-            mostrarAlerta('warning', `No puede agregar más del stock disponible.`);
+        } else if (item.cantidad > cantMax) {
+            item.cantidad = cantMax;
+            mostrarAlerta('warning', `No puede agregar más de ${cantMax} unidades (límite de 50 o stock disponible).`);
         }
         renderizarCarrito();
     }
@@ -162,7 +169,7 @@
                 <div class="d-flex align-items-center">
                     <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" data-action="cambiar-cantidad" data-id="${item.id}" data-delta="-1">-</button>
                     <span class="px-2 fw-bold small">${item.cantidad}</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" data-action="cambiar-cantidad" data-id="${item.id}" data-delta="1" ${item.cantidad >= item.stock ? 'disabled' : ''}>+</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" data-action="cambiar-cantidad" data-id="${item.id}" data-delta="1" ${item.cantidad >= Math.min(50, item.stock) ? 'disabled' : ''}>+</button>
                 </div>
                 <div class="text-end fw-bold small ms-2 text-success">
                     $${subtotal.toLocaleString()}

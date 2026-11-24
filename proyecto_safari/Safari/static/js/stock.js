@@ -94,8 +94,24 @@
 
     async function confirmarAgregarStock() {
         const cantInp = document.getElementById('cantidadSumar');
-        const cant = parseInt(cantInp ? cantInp.value : '0', 10);
-        if (!prodStockIdSeleccionado || isNaN(cant) || cant <= 0) return;
+        const valorRaw = (cantInp ? cantInp.value : '').trim();
+
+        // Bloquear caracteres no numéricos, signos negativos, valores vacíos o cero
+        if (!/^\d+$/.test(valorRaw)) {
+            alert('La cantidad a reponer debe contener exclusivamente dígitos numéricos enteros positivos.');
+            return;
+        }
+
+        const cant = parseInt(valorRaw, 10);
+        if (!prodStockIdSeleccionado || isNaN(cant) || cant <= 0) {
+            alert('Ingrese una cantidad válida mayor a 0 para reponer stock.');
+            return;
+        }
+
+        if (cant > 99999) {
+            alert('La cantidad a reponer no puede superar las 99.999 unidades.');
+            return;
+        }
 
         try {
             const response = await fetch('/stock/agregar/', {

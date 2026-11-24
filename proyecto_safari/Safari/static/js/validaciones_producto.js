@@ -200,8 +200,13 @@
         }
 
         const numero = parseInt(valor, 10);
-        if (isNaN(numero) || numero <= 0) {
-            mostrarError(input, 'El precio del producto debe ser un monto entero superior a $0 CLP.');
+        if (isNaN(numero) || numero < 100) {
+            mostrarError(input, 'El precio del producto debe ser un monto entero positivo de al menos $100 CLP.');
+            return false;
+        }
+
+        if (numero > 9999999) {
+            mostrarError(input, 'El precio del producto no puede superar los $9.999.999 CLP.');
             return false;
         }
 
@@ -214,7 +219,7 @@
      * - Obligatorio.
      * - Únicamente dígitos enteros (/^\d+$/).
      * - Rechaza explícitamente el signo negativo (-), puntos (.) y comas (,).
-     * - Debe ser mayor o igual a 0 unidades.
+     * - Debe ser un entero entre 0 y 99.999 unidades.
      */
     function validarStock(input) {
         if (!input) return true;
@@ -249,6 +254,11 @@
         const numero = parseInt(valor, 10);
         if (isNaN(numero) || numero < 0) {
             mostrarError(input, 'El stock debe ser un número entero mayor o igual a 0.');
+            return false;
+        }
+
+        if (numero > 99999) {
+            mostrarError(input, 'El stock no puede superar las 99.999 unidades.');
             return false;
         }
 
