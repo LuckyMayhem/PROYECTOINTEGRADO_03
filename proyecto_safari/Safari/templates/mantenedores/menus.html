@@ -1,0 +1,135 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+
+{% block title %}Mantenedor de Menús y Categorías{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Mantenedor de Menús y Secciones de la Carta</h3>
+        <p class="text-muted mb-0">Organización gastronómica: Platos de fondo, Bebestibles, Postres, etc.</p>
+    </div>
+    <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalMenu" data-action="nuevo-menu">
+        <i class="bi bi-plus-circle-fill me-1"></i> Nueva Categoría
+    </button>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-10">ID</th>
+                        <th class="th-w-30">Nombre de Sección / Categoría</th>
+                        <th class="th-w-30">Descripción de la Sección</th>
+                        <th class="th-w-14 text-center">Estado</th>
+                        <th class="th-w-16 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mn in menus %}
+                    <tr>
+                        <td><span class="badge bg-light text-dark border">#{{ mn.id }}</span></td>
+                        <td>
+                            <strong class="fs-6 text-dark">
+                                <i class="bi bi-bookmark-fill text-warning me-2"></i>{{ mn.nombre }}
+                            </strong>
+                            <small class="text-muted d-block">{{ mn.productos.count }} producto(s) asignados</small>
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ mn.descripcion|default:"Sin descripción" }}</span>
+                        </td>
+                        <td class="text-center">
+                            {% if mn.estado == 'activo' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-bold">
+                                <i class="bi bi-check-circle me-1"></i> Activo
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill fw-bold">
+                                <i class="bi bi-x-circle me-1"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalMenu"
+                                        data-action="editar-menu"
+                                        data-id="{{ mn.id }}"
+                                        data-nombre="{{ mn.nombre }}"
+                                        data-descripcion="{{ mn.descripcion }}"
+                                        data-estado="{{ mn.estado }}"
+                                        title="Editar Categoría">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <a href="/mantenedores/menus/eliminar/{{ mn.id }}/"
+                                   class="btn btn-outline-danger"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar la categoría '{{ mn.nombre|escapejs }}'?"
+                                   title="Eliminar Categoría">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No hay categorías registradas en la carta.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Menú -->
+<div class="modal fade" id="modalMenu" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/mantenedores/menus/guardar/" method="POST" id="formMenu">
+                {% csrf_token %}
+                <input type="hidden" name="menu_id" id="menuId">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalMenuTitulo">
+                        <i class="bi bi-journal-bookmark-fill text-warning me-2"></i> Crear Nueva Categoría
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre de la Sección <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" id="menuNombre" class="form-control" required placeholder="Ej: Platos de Fondo, Bebestibles, Postres">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción de la Sección</label>
+                            <input type="text" name="descripcion" id="menuDescripcion" class="form-control" placeholder="Ej: Hamburguesas, pizzas a la piedra y carnes">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado de la Sección <span class="text-danger">*</span></label>
+                            <select name="estado" id="menuEstado" class="form-select">
+                                <option value="activo">Activo (Visible en la carta)</option>
+                                <option value="inactivo">Inactivo (Oculto temporalmente)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark" id="btnGuardarMenu">
+                        <i class="bi bi-save me-1"></i> Guardar Categoría
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,688 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terminal de Caja • SafariPOS — Gestión Gastronómica & Aventura</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/safari-pos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/caja.css' %}">
+</head>
+<body class="caja-body">
+
+    <!-- Header de Navegación -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 py-2 shadow-sm sticky-top no-print">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold d-flex align-items-center gap-2">
+                <span class="fs-4">🦁</span>
+                <span>SafariPOS — Gestión Gastronómica & Aventura • Terminal de Caja</span>
+            </span>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="/stock/" class="btn btn-outline-warning btn-sm fw-bold">
+                    <i class="bi bi-box-seam me-1"></i> Consultar Stock
+                </a>
+                {% if rol == 'administrador' %}
+                <a href="/administrador/" class="btn btn-warning btn-sm fw-bold">
+                    <i class="bi bi-speedometer2 me-1"></i> Administración
+                </a>
+                {% endif %}
+                <div class="text-white small text-end lh-1 d-none d-sm-block">
+                    <strong class="d-block">{{ usuario }}</strong>
+                    <span class="badge bg-warning text-dark text-uppercase">{{ rol }}</span>
+                </div>
+                <a href="/logout/" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container-fluid px-3 py-3 no-print">
+        <div class="d-none">{% csrf_token %}</div>
+
+        <!-- Banner de Estado de Caja y Arqueo -->
+        {% if caja_abierta %}
+        <div class="alert alert-success d-flex flex-wrap justify-content-between align-items-center shadow-sm py-2 px-3 mb-3" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success fs-6"><i class="bi bi-unlock-fill me-1"></i> Caja Abierta</span>
+                <span class="small">
+                    Cajero: <strong>{{ caja.cajero_responsable.nombre|default:usuario }}</strong> • 
+                    Fondo Inicial: <strong>${{ caja.monto_inicial|floatformat:0 }} CLP</strong> • 
+                    Ventas Turno: <strong>${{ total_ventas_turno|floatformat:0 }} CLP</strong> (Efectivo: ${{ total_efectivo|floatformat:0 }})
+                </span>
+            </div>
+            <div>
+                <button type="button" class="btn btn-outline-danger btn-sm fw-bold shadow-sm" data-action="abrir-modal-cierre-caja">
+                    <i class="bi bi-door-closed-fill me-1"></i> Cerrar Caja (Arqueo)
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center shadow-sm py-3 px-3 mb-3" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-lock-fill fs-3 text-danger"></i>
+                <div>
+                    <strong class="d-block">Caja Cerrada (Fin de Horario / Fuera de Turno)</strong>
+                    <span class="small">No es posible emitir ventas. Se exige registrar obligatoriamente la apertura con cajero responsable y fondo inicial.</span>
+                </div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-success fw-bold shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#modalAbrirCaja">
+                    <i class="bi bi-door-open-fill me-1"></i> Iniciar Jornada / Abrir Caja
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="alertContainer"></div>
+
+        <!-- Selector Visual Principal: Ventas Directas en Barra vs Cuentas Pendientes por Mesa -->
+        <ul class="nav nav-pills nav-fill bg-white p-2 rounded-3 shadow-sm mb-3 border" id="pillsModalidadCajero" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold py-2 px-3 d-flex align-items-center justify-content-center gap-2" id="btnTabBarra" data-action="cambiar-seccion-cajero" data-seccion="barra" type="button">
+                    <i class="bi bi-cup-straw fs-5 text-primary"></i>
+                    <span>Ventas Directas en Barra (Inmediatas)</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold py-2 px-3 d-flex align-items-center justify-content-center gap-2 position-relative" id="btnTabMesas" data-action="cambiar-seccion-cajero" data-seccion="mesas" type="button">
+                    <i class="bi bi-table fs-5 text-warning"></i>
+                    <span>Cuentas Pendientes por Mesa</span>
+                    <span class="badge bg-danger ms-1 {% if not mesas_con_cuenta %}d-none{% endif %}" id="badgeCuentasPendientesTab">{{ mesas_con_cuenta|length }}</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- SECCIÓN A: VENTAS DIRECTAS EN BARRA (INMEDIATAS) -->
+        <div id="contenedorSeccionBarra">
+            <div class="row g-3">
+                <!-- Catálogo Táctil (Izquierda) -->
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-3 p-3">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-grid-fill text-warning me-1"></i> Catálogo de Productos (Venta Directa)
+                            </h5>
+                            <div class="mw-320">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="filtroBuscar" class="form-control" placeholder="Buscar por nombre o categoría...">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista compacta con scroll interno estilo ListView de Android -->
+                        <div class="listview-container p-2 mb-3 bg-white" id="scrollContenedorProductos">
+                            <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3" id="contenedorProductos">
+                                {% for p in productos %}
+                                <div class="col item-producto" data-nombre="{{ p.nombre }}" data-categoria="{{ p.categoria|default:'General' }}" data-stock="{{ p.stock }}">
+                                    <div class="card h-100 border text-center p-2 touch-card {% if p.stock <= 0 %}disabled-card bg-light{% endif %}" data-action="agregar-al-carrito" data-id="{{ p.id }}">
+                                        <div class="card-body p-2 d-flex flex-direction-column flex-column justify-content-between">
+                                            <div class="mb-2">
+                                                <div class="fs-1 mb-1">🍔</div>
+                                                <strong class="d-block text-truncate fs-6" title="{{ p.nombre }}">{{ p.nombre }}</strong>
+                                                <small class="text-muted d-block text-truncate">{{ p.categoria|default:p.descripcion|default:"General" }}</small>
+                                            </div>
+                                            <div>
+                                                <span class="fs-5 fw-bold text-success d-block mb-1">${{ p.precio|floatformat:0 }}</span>
+                                                {% if p.stock > 0 %}
+                                                <span class="badge {% if p.stock > 10 %}bg-success{% else %}bg-warning text-dark{% endif %} w-100 py-1" id="stockBadge-{{ p.id }}">
+                                                    Stock: {{ p.stock }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-danger w-100 py-1">Agotado (0)</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12 text-center py-5 text-muted">
+                                    No hay productos en inventario.
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Venta / Carrito Barra (Derecha) -->
+                <div class="col-lg-4">
+                    <div class="cart-panel p-3 border">
+                        <h5 class="fw-bold mb-3 pb-2 border-bottom d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-cart3 text-primary me-1"></i> Carrito de Barra Inmediata</span>
+                            <button class="btn btn-link btn-sm text-danger text-decoration-none p-0" id="btnLimpiarCarrito">
+                                <i class="bi bi-trash"></i> Vaciar
+                            </button>
+                        </h5>
+
+                        <!-- Selector de mesa/ubicación y mesero -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-6">
+                                <label for="selectMesa" class="form-label small fw-bold text-muted text-uppercase mb-1">Ubicación</label>
+                                <select class="form-select form-select-sm" id="selectMesa">
+                                    <option value="Barra Principal" selected>Barra Principal</option>
+                                    <option value="Para Llevar">Para Llevar</option>
+                                    <option value="Terraza Barra">Terraza Barra</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="selectMesero" class="form-label small fw-bold text-muted text-uppercase mb-1">Atendido Por</label>
+                                <select class="form-select form-select-sm" id="selectMesero">
+                                    <option value="">Cajero Directo</option>
+                                    {% for m in meseros %}
+                                    <option value="{{ m.id }}">{{ m.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Resumen del Pedido Actual en Carrito (Lista compacta con scroll interno) -->
+                        <div class="listview-container p-2 mb-3 bg-white" id="contenedorCarrito">
+                            <div class="text-center py-4 text-muted" id="carritoVacioMsg">
+                                <i class="bi bi-bag-x fs-1 d-block mb-1"></i>
+                                El carrito está vacío.<br>Haga clic en los productos para agregarlos.
+                            </div>
+                            <ul class="list-group list-group-flush" id="listaCarrito"></ul>
+                        </div>
+
+                        <!-- Notas de Comanda para Cocina -->
+                        <div class="mb-3">
+                            <label for="inputNotasComanda" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                <i class="bi bi-chat-left-dots me-1 text-primary"></i> Notas de Comanda
+                            </label>
+                            <input type="text" id="inputNotasComanda" class="form-control form-control-sm" placeholder="Ej: Sin sal, aderezo aparte, bebida fría...">
+                            <small class="text-muted font-2xs">Se transmiten a cocina en la comanda automática.</small>
+                        </div>
+
+                        <!-- Selector de Método de Pago Barra -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Método de Pago</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="metodoPagoRadio" id="pagoEfectivo" value="efectivo" checked>
+                                <label class="btn btn-outline-success btn-sm fw-bold py-2" for="pagoEfectivo">
+                                    <i class="bi bi-cash me-1"></i> Efectivo
+                                </label>
+
+                                <input type="radio" class="btn-check" name="metodoPagoRadio" id="pagoTarjeta" value="tarjeta">
+                                <label class="btn btn-outline-primary btn-sm fw-bold py-2" for="pagoTarjeta">
+                                    <i class="bi bi-credit-card me-1"></i> Tarjeta
+                                </label>
+
+                                <input type="radio" class="btn-check" name="metodoPagoRadio" id="pagoTransf" value="transferencia">
+                                <label class="btn btn-outline-info btn-sm fw-bold py-2" for="pagoTransf">
+                                    <i class="bi bi-arrow-left-right me-1"></i> Transf.
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Resumen de Totales Barra -->
+                        <div class="p-3 bg-light rounded-3 mb-3 border">
+                            <div class="d-flex justify-content-between align-items-center fs-4 fw-bold">
+                                <span>Total a Pagar:</span>
+                                <span class="text-success" id="totalMonto">$0 CLP</span>
+                            </div>
+                        </div>
+
+                        <!-- Botón Cobro Inmediato Barra -->
+                        <button class="btn btn-success btn-lg w-100 py-3 fw-bold shadow-sm" id="btnEmitirVenta" {% if not caja_abierta %}disabled title="Abra la caja primero para operar"{% endif %}>
+                            <i class="bi bi-check-circle-fill me-1"></i> Pagar y Emitir Boleta (Barra)
+                        </button>
+
+                        {% if not caja_abierta %}
+                        <small class="text-danger d-block text-center mt-2 fw-medium">
+                            <i class="bi bi-exclamation-circle me-1"></i> Caja cerrada. Realice la apertura de turno arriba.
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN B: CUENTAS PENDIENTES POR MESA (SALÓN) -->
+        <div id="contenedorSeccionMesas" class="d-none">
+            <div class="row g-3">
+                <!-- Panel de Cuadrícula de Mesas Pendientes (Izquierda) -->
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm rounded-3 p-3">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-table text-warning me-2"></i> Cuentas Pendientes por Mesa
+                                </h5>
+                                <small class="text-muted">Aislamiento estricto por mesa. Seleccione una comanda para liquidarla.</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="text" id="filtroMesasPendientes" class="form-control form-control-sm mw-260" placeholder="Buscar mesa o garzón...">
+                                <span class="badge bg-dark font-xs px-3 py-2" id="badgeTotalMesasPendientes">
+                                    {{ mesas_con_cuenta|length }} Mesas Activas
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Lista compacta con scroll interno de mesas pendientes -->
+                        <div class="listview-container p-2 mb-3 bg-white" id="scrollGridMesasPendientes">
+                            <div class="row row-cols-1 row-cols-md-2 g-3" id="gridMesasPendientes">
+                                {% for mc in mesas_con_cuenta %}
+                                <div class="col item-mesa-card" id="cardMesaItem-{{ mc.mesa_id }}" data-mesa-nombre="{{ mc.nombre }}" data-mesero="{{ mc.mesero }}" data-folio="{{ mc.folio }}">
+                                    <div class="card h-100 card-mesa-pendiente {% if mc.listo_para_cobro %}card-mesa-listo-cobro{% else %}card-mesa-en-consumo{% endif %} p-3 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="fw-bold mb-0 text-dark fs-5">{{ mc.nombre }}</h6>
+                                                {% if mc.listo_para_cobro %}
+                                                <span class="badge bg-warning text-dark fw-bold">
+                                                    <i class="bi bi-bell-fill me-1"></i> LISTO PARA COBRO
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-primary">EN CONSUMO</span>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="small mb-2 text-muted">
+                                                <div>Comanda: <strong class="text-dark">{{ mc.folio }}</strong></div>
+                                                <div>Garzón: <span class="text-dark fw-medium">{{ mc.mesero }}</span></div>
+                                                {% if mc.notas %}
+                                                <div class="text-truncate font-2xs mt-1"><em>Nota: {{ mc.notas }}</em></div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <span class="text-muted small">Total acumulado:</span>
+                                                <div class="fs-4 fw-bold text-success">${{ mc.total|floatformat:0 }} CLP</div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm" data-action="cargar-mesa-para-cobro" data-mesa-id="{{ mc.mesa_id }}">
+                                                <i class="bi bi-receipt me-1"></i> Cobrar y Emitir Boleta
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12 text-center py-5 text-muted" id="sinMesasPendientesMsg">
+                                    <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
+                                    <strong class="d-block fs-6">No hay cuentas pendientes en este momento.</strong>
+                                    <span class="small">Todas las mesas de salón están desocupadas o al día.</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de Liquidación de la Mesa Seleccionada (Derecha) -->
+                <div class="col-lg-5">
+                    <div class="cart-panel p-3 border">
+                        <h5 class="fw-bold mb-3 pb-2 border-bottom d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-receipt text-primary me-1"></i> Liquidación de Mesa</span>
+                            <span class="badge bg-primary font-xs" id="badgeMesaActivaCobro">Ninguna</span>
+                        </h5>
+
+                        <!-- Selector rápido de mesa alternativa -->
+                        <div class="mb-3">
+                            <label for="selectMesaCobro" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                Seleccionar Mesa a Liquidar
+                            </label>
+                            <select class="form-select form-select-sm" id="selectMesaCobro">
+                                <option value="">-- Seleccione una mesa con cuenta --</option>
+                                {% for mc in mesas_con_cuenta %}
+                                <option value="{{ mc.mesa_id }}" data-comanda-id="{{ mc.comanda_id }}">
+                                    {{ mc.nombre }} • {{ mc.folio }} (${{ mc.total|floatformat:0 }} CLP) - {{ mc.mesero }}{% if mc.listo_para_cobro %} [LISTO COBRO]{% endif %}
+                                </option>
+                                {% empty %}
+                                <option value="" disabled>No hay mesas con cuentas pendientes</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Detalle de la Mesa Seleccionada -->
+                        <div id="infoMesaSeleccionada" class="d-none">
+                            <div class="bg-light p-2 rounded-2 border mb-2 small">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Mesa:</span>
+                                    <strong id="detalleMesaNombre" class="text-dark">-</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Folio Comanda:</span>
+                                    <span id="detalleMesaFolio" class="badge bg-primary">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Garzón:</span>
+                                    <strong id="detalleMesaMesero" class="text-dark">-</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Estado Cocina:</span>
+                                    <span id="detalleMesaEstadoCocina" class="badge bg-warning text-dark">-</span>
+                                </div>
+                                <div id="contenedorNotasMesa" class="border-top pt-1 mt-1 d-none">
+                                    <span class="text-muted d-block font-2xs">Notas de comanda:</span>
+                                    <em id="detalleMesaNotas" class="text-dark font-xs"></em>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Ítems de la Comanda (Lista compacta con scroll interno) -->
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1">Ítems de la Comanda</label>
+                            <div class="listview-container p-2 mb-3 bg-white" id="contenedorItemsMesa">
+                                <ul class="list-group list-group-flush" id="listaItemsMesa"></ul>
+                            </div>
+
+                            <!-- Selector de Método de Pago Mesa -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-muted text-uppercase mb-1">Método de Pago</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="metodoPagoMesaRadio" id="pagoMesaEfectivo" value="efectivo" checked>
+                                    <label class="btn btn-outline-success btn-sm fw-bold py-2" for="pagoMesaEfectivo">
+                                        <i class="bi bi-cash me-1"></i> Efectivo
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="metodoPagoMesaRadio" id="pagoMesaTarjeta" value="tarjeta">
+                                    <label class="btn btn-outline-primary btn-sm fw-bold py-2" for="pagoMesaTarjeta">
+                                        <i class="bi bi-credit-card me-1"></i> Tarjeta
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="metodoPagoMesaRadio" id="pagoMesaTransf" value="transferencia">
+                                    <label class="btn btn-outline-info btn-sm fw-bold py-2" for="pagoMesaTransf">
+                                        <i class="bi bi-arrow-left-right me-1"></i> Transf.
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Resumen de Totales Mesa -->
+                            <div class="p-3 bg-light rounded-3 mb-3 border">
+                                <div class="d-flex justify-content-between align-items-center fs-4 fw-bold">
+                                    <span>Total Cuenta:</span>
+                                    <span class="text-success" id="totalMontoMesa">$0 CLP</span>
+                                </div>
+                            </div>
+
+                            <!-- Botón Liquidación Mesa -->
+                            <button class="btn btn-primary btn-lg w-100 py-3 fw-bold shadow-sm" id="btnLiquidarMesa" {% if not caja_abierta %}disabled title="Abra la caja primero para operar"{% endif %}>
+                                <i class="bi bi-receipt me-1"></i> Liquidar Mesa y Emitir Boleta
+                            </button>
+                        </div>
+
+                        <div id="sinMesaSeleccionadaMsg" class="text-center py-4 text-muted">
+                            <i class="bi bi-receipt-cutoff fs-1 d-block mb-1 text-warning"></i>
+                            Seleccione una mesa a la izquierda para cargar su cuenta y liquidarla.
+                        </div>
+
+                        {% if not caja_abierta %}
+                        <small class="text-danger d-block text-center mt-2 fw-medium">
+                            <i class="bi bi-exclamation-circle me-1"></i> Caja cerrada. Realice la apertura de turno arriba.
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Comprobante / Ticket Imprimible -->
+    <div class="modal fade" id="modalVoucher" tabindex="-1" aria-labelledby="modalVoucherLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered mw-360">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body p-4" id="comprobanteImprimible">
+                    <!-- CONTENIDO EXCLUSIVO DEL TICKET TÉRMICO -->
+                    <div class="text-center pb-2 mb-2 border-bottom">
+                        <h5 class="fw-bold mb-0">PARQUE SAFARI CHILE</h5>
+                        <small class="text-muted d-block">R.U.T: 76.543.210-K</small>
+                        <small class="text-muted d-block">Rancagua, Región de O'Higgins</small>
+                        <strong class="badge bg-dark fs-6 mt-2" id="tkFolio">BOL-0001</strong>
+                    </div>
+
+                    <div class="small mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Fecha:</span>
+                            <strong id="tkFecha">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Cajero:</span>
+                            <span>{{ usuario }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Ubicación:</span>
+                            <span id="tkMesa">Mesa 1</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Método Pago:</span>
+                            <strong id="tkMetodoPago" class="text-uppercase">Efectivo</strong>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm small mb-2 border-top border-bottom">
+                        <thead>
+                            <tr>
+                                <th>Cant.</th>
+                                <th>Detalle</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tkDetalle"></tbody>
+                    </table>
+
+                    <div class="d-flex justify-content-between align-items-center fs-5 fw-bold my-2">
+                        <span>TOTAL:</span>
+                        <span id="tkTotal" class="text-success">$0</span>
+                    </div>
+
+                    <div class="text-center pt-2 border-top text-muted font-2xs">
+                        <span>*** COPIA CLIENTE / COMPROBANTE VÁLIDO ***</span><br>
+                        <span>¡Gracias por su visita al Parque Safari!</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer p-2 no-print bg-light">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-action="cerrar-recargar">Cerrar</button>
+                    <button type="button" class="btn btn-primary btn-sm fw-bold" data-action="imprimir-voucher">
+                        <i class="bi bi-printer-fill me-1"></i> Imprimir Voucher
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Abrir Caja (Apertura Obligatoria de Jornada) -->
+    <div class="modal fade" id="modalAbrirCaja" tabindex="-1" aria-labelledby="modalAbrirCajaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="modalAbrirCajaLabel">
+                        <i class="bi bi-door-open-fill me-2"></i> Apertura de Caja y Turno
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        Obligatorio registrar el cajero responsable del turno y el fondo de caja inicial para autorizar las ventas.
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="selectCajeroApertura" class="form-label small fw-bold text-muted text-uppercase">Cajero Responsable</label>
+                        <select class="form-select form-select-lg fs-6" id="selectCajeroApertura">
+                            {% for c in cajeros %}
+                            <option value="{{ c.id }}" {% if c.nombre == usuario or c.username == request.session.usuario.username %}selected{% endif %}>
+                                {{ c.nombre }} ({{ c.username }} - {{ c.rol }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputMontoInicial" class="form-label small fw-bold text-muted text-uppercase">Fondo Inicial de Caja (CLP)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">$</span>
+                            <input type="number" class="form-control form-control-lg fs-6" id="inputMontoInicial" min="0" step="1000" value="50000" placeholder="Ej. 50000" required>
+                        </div>
+                        <small class="text-muted">Dinero en efectivo base asignado para dar cambio / vueltos.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success fw-bold" data-action="ejecutar-apertura-caja">
+                        <i class="bi bi-check-circle-fill me-1"></i> Confirmar Apertura
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Cierre de Caja y Arqueo (Desglose por método de pago y diferencia) -->
+    <div class="modal fade" id="modalCerrarCaja" tabindex="-1" aria-labelledby="modalCerrarCajaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-620">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="modalCerrarCajaLabel">
+                        <i class="bi bi-calculator-fill me-2"></i> Cierre de Caja y Arqueo de Turno
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Resumen del Turno Calculado Automáticamente -->
+                    <div class="bg-light p-3 rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Cajero Responsable:</span>
+                            <strong class="text-dark" id="arqCajero">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Fecha Apertura:</span>
+                            <span id="arqFechaAp">-</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Fondo Inicial:</span>
+                            <strong class="text-dark" id="arqFondoInicial">$0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 text-success">
+                            <span>Ventas Efectivo:</span>
+                            <strong id="arqEfectivo">$0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 text-primary">
+                            <span>Ventas Tarjeta:</span>
+                            <strong id="arqTarjeta">$0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 text-info">
+                            <span>Ventas Transferencia:</span>
+                            <strong id="arqTransferencia">$0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top fw-bold text-dark fs-6">
+                            <span>Total Ventas:</span>
+                            <span id="arqTotalVentas">$0</span>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2 border-top fw-bold text-success fs-5">
+                            <span>Efectivo Esperado en Gaveta:</span>
+                            <span id="arqEfectivoEsperado">$0</span>
+                        </div>
+                        <small class="text-muted d-block font-2xs">(Fondo Inicial + Ventas Efectivo)</small>
+                    </div>
+
+                    <!-- Arqueo Detallado de Efectivo (Billetes y Monedas) -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-cash-stack me-1"></i> Arqueo Detallado de Efectivo</span>
+                            <span class="badge bg-secondary font-xs">Conteo Físico</span>
+                        </label>
+                        <div class="row g-2">
+                            <!-- Columna Billetes -->
+                            <div class="col-md-6">
+                                <div class="denominacion-box h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                        <strong class="text-dark small"><i class="bi bi-cash me-1"></i> Billetes</strong>
+                                        <span class="badge bg-dark font-2xs" id="subtotalBilletes">$0 CLP</span>
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantBilletes20000" class="small mb-0 text-muted">$20.000:</label>
+                                        <input type="number" id="cantBilletes20000" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantBilletes10000" class="small mb-0 text-muted">$10.000:</label>
+                                        <input type="number" id="cantBilletes10000" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantBilletes5000" class="small mb-0 text-muted">$5.000:</label>
+                                        <input type="number" id="cantBilletes5000" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantBilletes1000" class="small mb-0 text-muted">$1.000:</label>
+                                        <input type="number" id="cantBilletes1000" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Columna Monedas -->
+                            <div class="col-md-6">
+                                <div class="denominacion-box h-100">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                        <strong class="text-dark small"><i class="bi bi-coin me-1"></i> Monedas</strong>
+                                        <span class="badge bg-dark font-2xs" id="subtotalMonedas">$0 CLP</span>
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantMonedas500" class="small mb-0 text-muted">$500:</label>
+                                        <input type="number" id="cantMonedas500" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantMonedas100" class="small mb-0 text-muted">$100:</label>
+                                        <input type="number" id="cantMonedas100" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantMonedas50" class="small mb-0 text-muted">$50:</label>
+                                        <input type="number" id="cantMonedas50" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantMonedas5" class="small mb-0 text-muted">$5:</label>
+                                        <input type="number" id="cantMonedas5" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                    <div class="denominacion-row">
+                                        <label for="cantMonedas1" class="small mb-0 text-muted">$1:</label>
+                                        <input type="number" id="cantMonedas1" class="form-control form-control-sm input-denominacion" min="0" step="1" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Efectivo Declarado (Calculado en tiempo real) -->
+                    <div class="mb-3">
+                        <label for="inputMontoReal" class="form-label small fw-bold text-muted text-uppercase d-flex justify-content-between">
+                            <span>Total Efectivo Físico Declarado (CLP)</span>
+                            <span id="totalArqueoCalculado" class="text-primary fw-bold">$0 CLP</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white fw-bold">$</span>
+                            <input type="number" class="form-control form-control-lg fs-5 fw-bold" id="inputMontoReal" min="0" step="1" placeholder="0">
+                        </div>
+                        <small class="text-muted">Calculado automáticamente a partir del desglose de billetes y monedas.</small>
+                    </div>
+
+                    <!-- Visualización de Diferencia en Vivo -->
+                    <div class="alert text-center py-2 mb-0 d-none" id="alertaDiferencia">
+                        <span class="d-block small text-uppercase fw-bold" id="tituloDiferencia">Diferencia de Arqueo</span>
+                        <h4 class="fw-bold mb-0" id="montoDiferencia">$0 CLP</h4>
+                        <small id="subtituloDiferencia">-</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger fw-bold" data-action="ejecutar-cierre-caja">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Confirmar Cierre y Guardar Arqueo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Datos y Lógica Modular -->
+    <script id="productos-data" type="application/json">{{ productos_json|safe }}</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/cuadratura.js' %}"></script>
+    <script src="{% static 'js/caja.js' %}"></script>
+    <script src="{% static 'js/seguridad_formularios.js' %}"></script>
+    <script src="{% static 'js/validaciones.js' %}"></script>
+</body>
+</html>

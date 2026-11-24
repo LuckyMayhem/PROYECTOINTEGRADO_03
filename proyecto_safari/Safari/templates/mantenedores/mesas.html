@@ -1,0 +1,153 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+
+{% block title %}Mantenedor de Mesas{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Mantenedor de Mesas del Salón</h3>
+        <p class="text-muted mb-0">Configuración física del salón gastronómico, terrazas, capacidades y disponibilidad.</p>
+    </div>
+    <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalMesa" data-action="nueva-mesa">
+        <i class="bi bi-plus-circle-fill me-1"></i> Nueva Mesa
+    </button>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-12">N° Mesa</th>
+                        <th class="th-w-28">Nombre / Identificador</th>
+                        <th class="th-w-18 text-center">Capacidad Máxima</th>
+                        <th class="th-w-18 text-center">Estado Actual</th>
+                        <th class="th-w-24 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in mesas %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-dark text-warning fs-6 px-3 py-2 rounded-3">
+                                #{{ m.numero }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong class="fs-6 text-dark">{{ m.nombre }}</strong>
+                            {% if m.comida_entregada %}
+                            <small class="text-success d-block"><i class="bi bi-check-all"></i> Comida entregada</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                                <i class="bi bi-people-fill text-primary me-1"></i> {{ m.capacidad }} personas
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if m.estado == 'disponible' or m.estado == 'desocupada' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold">
+                                <i class="bi bi-check-circle me-1"></i> Disponible
+                            </span>
+                            {% elif m.estado == 'ocupada' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-bold">
+                                <i class="bi bi-person-fill me-1"></i> Ocupada
+                            </span>
+                            {% elif m.estado == 'reservada' %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill fw-bold">
+                                <i class="bi bi-bookmark-star-fill me-1"></i> Reservada
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary px-3 py-2 rounded-pill">{{ m.estado }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalMesa"
+                                        data-action="editar-mesa"
+                                        data-id="{{ m.id }}"
+                                        data-numero="{{ m.numero }}"
+                                        data-nombre="{{ m.nombre }}"
+                                        data-capacidad="{{ m.capacidad }}"
+                                        data-estado="{{ m.estado }}"
+                                        title="Editar Mesa">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <a href="/mantenedores/mesas/eliminar/{{ m.id }}/"
+                                   class="btn btn-outline-danger"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar la mesa #{{ m.numero }} ({{ m.nombre }})?"
+                                   title="Eliminar Mesa">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No hay mesas registradas en el salón.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Mesa -->
+<div class="modal fade" id="modalMesa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/mantenedores/mesas/guardar/" method="POST" id="formMesa">
+                {% csrf_token %}
+                <input type="hidden" name="mesa_id" id="mesaId">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalMesaTitulo">
+                        <i class="bi bi-square-fill text-warning me-2"></i> Crear Nueva Mesa
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Número de Mesa <span class="text-danger">*</span></label>
+                            <input type="number" name="numero" id="mesaNumero" class="form-control" required min="1" placeholder="Ej: 1">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Capacidad Comensales <span class="text-danger">*</span></label>
+                            <input type="number" name="capacidad" id="mesaCapacidad" class="form-control" required min="1" max="50" value="4">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre / Descripción <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" id="mesaNombre" class="form-control" required placeholder="Ej: Mesa Terraza 1, VIP Salón">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado de Disponibilidad <span class="text-danger">*</span></label>
+                            <select name="estado" id="mesaEstado" class="form-select">
+                                <option value="disponible">Disponible (Libre para comensales)</option>
+                                <option value="ocupada">Ocupada (Con orden activa)</option>
+                                <option value="reservada">Reservada (Apartada previamente)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold" id="btnGuardarMesa">
+                        <i class="bi bi-save me-1"></i> Guardar Mesa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

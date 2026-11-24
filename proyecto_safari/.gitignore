@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+gunicorn.sock
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Variables de entorno secretas (NUNCA commitear .env real)
+.env
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

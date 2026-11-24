@@ -1,0 +1,27 @@
+/* ==========================================================================
+   SafariPOS — Estilos Módulo de Mesero (mesero.html)
+   Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   ========================================================================== */
+
+.mesa-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    color: #F8F9FA;
+}
+
+.mesa-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* Contenedores compactos estilo ListView de Android */
+.listview-container {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    border-radius: 6px;
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    color: #F8F9FA;
+    -webkit-overflow-scrolling: touch;
+}

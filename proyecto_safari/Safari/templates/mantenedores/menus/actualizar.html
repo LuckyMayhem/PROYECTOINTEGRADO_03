@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Actualizar Categoría de Menú - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-xl-6">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-pencil-square text-warning me-2"></i> Actualizar Categoría #{{ menu_editar.id }}
+                </h5>
+                <a href="/mantenedores/menus/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/menus/guardar/" method="POST" id="formActualizarMenu">
+                    {% csrf_token %}
+                    <input type="hidden" name="menu_id" value="{{ menu_editar.id }}">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre de la Sección <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required value="{{ menu_editar.nombre }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción de la Sección</label>
+                            <input type="text" name="descripcion" class="form-control" value="{{ menu_editar.descripcion|default:'' }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado de la Sección <span class="text-danger">*</span></label>
+                            <select name="estado" class="form-select">
+                                <option value="activo" {% if menu_editar.estado == 'activo' %}selected{% endif %}>Activo (Visible en la carta)</option>
+                                <option value="inactivo" {% if menu_editar.estado == 'inactivo' %}selected{% endif %}>Inactivo (Oculto temporalmente)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/menus/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark px-4">
+                            <i class="bi bi-save me-1"></i> Actualizar Categoría
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+
+{% block title %}Mantenedor de Usuarios{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Mantenedor de Usuarios y Personal</h3>
+        <p class="text-muted mb-0">Administración de cuentas de acceso, RUT, roles y estado operacional.</p>
+    </div>
+    <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalUsuario" data-action="nuevo-usuario-crud">
+        <i class="bi bi-person-plus-fill me-1"></i> Nuevo Usuario
+    </button>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-14">RUT / Cédula</th>
+                        <th class="th-w-24">Nombre del Colaborador</th>
+                        <th class="th-w-18">Usuario / Correo</th>
+                        <th class="th-w-14">Rol / Perfil</th>
+                        <th class="th-w-12 text-center">Estado</th>
+                        <th class="th-w-18 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td><code>{{ u.rut|default:"Sin registrar" }}</code></td>
+                        <td>
+                            <strong>{{ u.nombre }}</strong>
+                            {% if u.id == request.session.usuario.id %}
+                            <span class="badge bg-secondary-subtle text-secondary ms-1">Tú (Sesión activa)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div><code>@{{ u.username }}</code></div>
+                            <small class="text-muted">{{ u.correo }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if u.rol == 'administrador' %}bg-warning text-dark{% elif u.rol == 'cajero' %}bg-info text-dark{% elif u.rol == 'mesero' %}bg-primary{% else %}bg-danger{% endif %} text-uppercase px-2 py-1">
+                                {{ u.rol }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if u.estado == 'activo' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-check-circle me-1"></i> Activo
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-x-circle me-1"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                {% if u.id == request.session.usuario_id or u.id == request.session.usuario.id %}
+                                <button class="btn btn-outline-secondary" disabled title="No puedes desactivar ni modificar tu propia cuenta de administrador en sesión">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar Rol
+                                </button>
+                                <button class="btn btn-outline-danger" disabled title="No puedes desactivar ni modificar tu propia cuenta de administrador en sesión">
+                                    <i class="bi bi-slash-circle me-1"></i> Desactivar/Anular
+                                </button>
+                                {% else %}
+                                <button class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalUsuario"
+                                        data-action="editar-usuario-crud"
+                                        data-id="{{ u.id }}"
+                                        data-rut="{{ u.rut }}"
+                                        data-nombre="{{ u.nombre }}"
+                                        data-correo="{{ u.correo }}"
+                                        data-username="{{ u.username }}"
+                                        data-rol="{{ u.rol }}"
+                                        data-estado="{{ u.estado }}"
+                                        title="Editar Rol">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <a href="/mantenedores/usuarios/eliminar/{{ u.id }}/"
+                                   class="btn btn-outline-danger"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar al usuario @{{ u.username|escapejs }}?"
+                                   title="Desactivar/Anular">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No hay usuarios registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/mantenedores/usuarios/guardar/" method="POST" id="formUsuario">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" id="userId">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalUsuarioTitulo">
+                        <i class="bi bi-person-fill-gear text-warning me-2"></i> Crear Nuevo Usuario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">RUT / Cédula</label>
+                            <input type="text" name="rut" id="userRut" class="form-control" placeholder="12.345.678-9">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" id="userNombre" class="form-control" required placeholder="Ej: Juan Pérez">
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">Nombre de Usuario <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="userUsername" class="form-control" required placeholder="juanperez">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input type="email" name="correo" id="userCorreo" class="form-control" required placeholder="juan@parquesafari.cl">
+                        </div>
+
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">Rol / Perfil <span class="text-danger">*</span></label>
+                            <select name="rol" id="userRol" class="form-select" >
+                                <option value="cajero">Cajero (POS y Cobro)</option>
+                                <option value="mesero">Mesero (Salón y Mesas)</option>
+                                <option value="cocinero">Cocinero (Monitor de Cocina)</option>
+                                <option value="administrador">Administrador (Control Total)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label fw-bold">Estado <span class="text-danger">*</span></label>
+                            <select name="estado" id="userEstado" class="form-select">
+                                <option value="activo">Activo (Habilitado)</option>
+                                <option value="inactivo">Inactivo (Deshabilitado)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                Contraseña <span id="passObligatorio" class="text-danger">*</span>
+                            </label>
+                            <input type="password" name="password" id="userPassword" class="form-control" placeholder="Mínimo 6 caracteres">
+                            <small class="text-muted" id="passAyuda">Para un usuario nuevo es obligatoria; al editar, déjela vacía si no desea cambiarla.</small>
+                        </div>
+
+                        <!-- Sección de Reautenticación de Seguridad para Administradores -->
+                        <div class="col-12" id="seccionConfirmAdmin" class="col-12 d-none">
+                            <div class="alert alert-warning border border-warning p-3 mt-2 mb-0">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-shield-exclamation text-danger fs-4 me-2"></i>
+                                    <strong class="text-dark">Autorización de Seguridad Requerida</strong>
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    Para crear o asignar privilegios de <strong>Administrador</strong>, confirme sus credenciales actuales:
+                                </p>
+                                <div class="row g-2">
+                                    <div class="col-sm-6">
+                                        <input type="text" name="admin_confirm_username" id="adminConfirmUser" class="form-control form-control-sm" placeholder="Su usuario admin">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <input type="password" name="admin_confirm_password" id="adminConfirmPass" class="form-control form-control-sm" placeholder="Su contraseña admin">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold" id="btnGuardarUsuario">
+                        <i class="bi bi-save me-1"></i> Guardar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

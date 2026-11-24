@@ -1,0 +1,76 @@
+/* ==============================================================================
+   SafariPOS — Inicio de Sesión (login.html)
+   Estética Corporativa: Negro Carbón (#121212, #1E1E1E) y Dorado Safari (#F5B041)
+   ============================================================================== */
+
+body.login-body {
+    background-color: #121212;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)), url('../img/safari-savanna.svg');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-container {
+    max-width: 460px;
+    width: 100%;
+}
+
+.login-card {
+    background-color: #1e1e1e !important;
+    border: 1px solid rgba(245, 176, 65, 0.4) !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85) !important;
+    border-radius: 1.25rem !important;
+    overflow: hidden;
+}
+
+.login-header {
+    background: linear-gradient(180deg, #181818 0%, #222222 100%) !important;
+    border-bottom: 2px solid #f5b041 !important;
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+}
+
+.login-logo {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 0.75rem auto;
+    display: block;
+    filter: drop-shadow(0 4px 10px rgba(245, 176, 65, 0.4));
+}
+
+.login-title {
+    color: #f5b041;
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.login-subtitle {
+    letter-spacing: 1.5px;
+    font-size: 0.75rem;
+    color: #ffc107 !important;
+    font-weight: 600;
+}
+
+.login-card-body {
+    background-color: #1e1e1e;
+    color: #f8f9fa;
+    padding: 2rem 2.25rem;
+}
+
+.login-footer-text {
+    border-top: 1px solid #333333;
+    color: #b0b3b8;
+    font-size: 0.8rem;
+}
+
+.login-footer-text strong {
+    color: #f5b041;
+}

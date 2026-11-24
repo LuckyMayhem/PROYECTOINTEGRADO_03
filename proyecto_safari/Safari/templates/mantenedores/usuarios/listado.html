@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Mantenedor de Usuarios - Safari POS{% endblock %}
+
+{% block subnav %}
+<nav class="bg-white border-bottom shadow-sm py-2">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center">
+        <ul class="nav nav-pills gap-1">
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/">
+                    <i class="bi bi-grid-fill me-1"></i> Centro de Control
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active bg-warning text-dark fw-bold" href="/mantenedores/usuarios/">
+                    <i class="bi bi-people-fill me-1"></i> Usuarios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/mesas/">
+                    <i class="bi bi-square-fill me-1"></i> Mesas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/puntos-de-venta/">
+                    <i class="bi bi-display me-1"></i> Puntos de Venta
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/menus/">
+                    <i class="bi bi-journal-bookmark-fill me-1"></i> Menús / Categorías
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/productos/">
+                    <i class="bi bi-egg-fried me-1"></i> Productos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/auditoria/">
+                    <i class="bi bi-shield-check me-1"></i> Auditoría
+                </a>
+            </li>
+        </ul>
+        <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">
+            <i class="bi bi-person-badge-fill me-1"></i> Mantenedor Maestro
+        </span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-people-fill text-primary me-2"></i> Mantenedor de Usuarios
+        </h3>
+        <p class="text-muted mb-0">Listado general del personal con control de roles, credenciales, RUT y estados de acceso.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/mantenedores/usuarios/registrar/" class="btn btn-primary fw-bold shadow-sm btn-action">
+            <i class="bi bi-person-plus-fill me-1"></i> Agregar Usuario
+        </a>
+        <a href="/mantenedores/" class="btn btn-outline-secondary btn-action">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Centro
+        </a>
+    </div>
+</div>
+
+<!-- Tabla Estándar de Usuarios -->
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+        <span class="fw-bold">
+            <i class="bi bi-table me-2 text-warning"></i> Listado Oficial de Usuarios Registrados
+        </span>
+        <span class="badge bg-warning text-dark px-2 py-1">
+            Total: {{ usuarios|length }} usuarios
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0 table-custom">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-15">RUT / Cédula</th>
+                        <th class="th-w-20">Nombre Completo</th>
+                        <th class="th-w-20">Usuario y Correo</th>
+                        <th class="th-w-15">Rol / Perfil</th>
+                        <th class="th-w-12 text-center">Estado</th>
+                        <th class="th-w-18 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td>
+                            <strong class="text-dark">{{ u.rut|default:"Sin RUT" }}</strong>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ u.nombre }}</div>
+                            <small class="text-muted">ID: #{{ u.id }}</small>
+                        </td>
+                        <td>
+                            <div><code>@{{ u.username }}</code></div>
+                            <small class="text-muted">{{ u.correo }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if u.rol == 'administrador' %}bg-warning text-dark{% elif u.rol == 'cajero' %}bg-info text-dark{% elif u.rol == 'mesero' %}bg-primary{% else %}bg-danger{% endif %} text-uppercase px-2 py-1">
+                                {{ u.rol }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if u.estado == 'activo' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-check-circle me-1"></i> Activo
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-x-circle me-1"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                {% if u.id == request.session.usuario_id or u.id == request.session.usuario.id %}
+                                <button type="button" class="btn btn-outline-secondary btn-action" disabled title="No puedes desactivar ni modificar tu propia cuenta de administrador en sesión">
+                                    <i class="bi bi-pencil-square"></i> Editar Rol
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-action" disabled title="No puedes desactivar ni modificar tu propia cuenta de administrador en sesión">
+                                    <i class="bi bi-slash-circle"></i> Desactivar/Anular
+                                </button>
+                                {% else %}
+                                <a href="/mantenedores/usuarios/actualizar/{{ u.id }}/" class="btn btn-outline-primary btn-action" title="Editar Rol">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <a href="/mantenedores/usuarios/eliminar/{{ u.id }}/"
+                                   class="btn btn-outline-danger btn-action"
+                                   data-action="confirm-delete" data-confirm-msg="¿Confirma la eliminación del usuario @{{ u.username|escapejs }}? Esta acción quedará auditada."
+                                   title="Desactivar/Anular">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2"></i>
+                            No hay usuarios registrados en el sistema.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

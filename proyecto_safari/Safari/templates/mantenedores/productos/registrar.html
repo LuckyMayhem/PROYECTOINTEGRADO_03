@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registrar Nuevo Producto - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-egg-fried text-danger me-2"></i> Registrar Nuevo Producto
+                </h5>
+                <a href="/mantenedores/productos/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/productos/guardar/" method="POST" id="formRegistrarProducto">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-sm-5">
+                            <label class="form-label fw-bold">Código SKU</label>
+                            <input type="text" name="codigo" class="form-control" placeholder="Ej: HAM-001, BEB-010">
+                            <small class="text-muted">Identificador de inventario / código de barra.</small>
+                        </div>
+                        <div class="col-sm-7">
+                            <label class="form-label fw-bold">Categoría / Menú</label>
+                            <select name="menu_id" class="form-select">
+                                <option value="">-- Sin categoría asignada --</option>
+                                {% for mn in menus %}
+                                <option value="{{ mn.id }}">{{ mn.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Sección a la que pertenecerá el producto.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre del Producto <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required placeholder="Ej: Hamburguesa Safari Especial Doble">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción</label>
+                            <input type="text" name="descripcion" class="form-control" placeholder="Ingredientes, presentación o notas para cocina">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Precio en CLP <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="precio" class="form-control" required min="0" step="50" placeholder="7500">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Stock Inicial <span class="text-danger">*</span></label>
+                            <input type="number" name="stock" class="form-control" required min="0" placeholder="20" value="10">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/productos/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger fw-bold px-4">
+                            <i class="bi bi-check-circle-fill me-1"></i> Registrar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/validaciones_producto.js' %}"></script>
+{% endblock %}

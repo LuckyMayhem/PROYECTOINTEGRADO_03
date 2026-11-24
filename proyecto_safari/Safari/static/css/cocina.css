@@ -1,0 +1,253 @@
+/* ==============================================================================
+   SafariPOS — Estilos Módulo de Cocina (cocinero.html)
+   Barra de pestañas (Tabs) estilo navegador Chrome y diseño modular
+   Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   ============================================================================== */
+
+/* ------------------------------------------------------------------------------
+   1. BARRA DE NAVEGACIÓN SUPERIOR CON PESTAÑAS ESTILO NAVEGADOR CHROME (DARK)
+   ------------------------------------------------------------------------------ */
+
+.chrome-tabstrip-container {
+    background-color: #161616;
+    border: 1px solid #2a2a2a;
+    border-bottom: none;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    padding: 0.5rem 0.75rem 0 0.75rem;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.chrome-tabstrip {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.chrome-tabstrip::-webkit-scrollbar {
+    height: 4px;
+}
+
+.chrome-tabstrip::-webkit-scrollbar-thumb {
+    background: #3e3e3e;
+    border-radius: 4px;
+}
+
+/* Pestaña individual */
+.chrome-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.15rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #9aa0a6;
+    background-color: #242424;
+    border: 1px solid #2e2e2e;
+    border-bottom: none;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    outline: none;
+}
+
+.chrome-tab:hover {
+    background-color: #2f2f2f;
+    color: #f1f3f4;
+}
+
+/* Pestaña Activa estilo Google Chrome Dark + Acento Dorado Safari */
+.chrome-tab.active {
+    background-color: var(--safari-surface-dark, #1E1E1E) !important;
+    color: var(--safari-gold, #F5B041) !important;
+    font-weight: 700;
+    border-color: #383838 #383838 var(--safari-surface-dark, #1E1E1E) !important;
+    border-top: 3px solid var(--safari-gold, #F5B041) !important;
+    border-bottom: 2px solid var(--safari-surface-dark, #1E1E1E) !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+    margin-bottom: -1px;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+}
+
+/* Pestaña 5: Re-Cocinando (Órdenes re-emitidas con distintivo visible) */
+.chrome-tab.chrome-tab-recocinando {
+    background-color: #2b180d;
+    color: #ff9e80;
+    border-top: 3px solid #ff6e40;
+}
+
+.chrome-tab.chrome-tab-recocinando:hover {
+    background-color: #361f12;
+    color: #ffab91;
+}
+
+.chrome-tab.chrome-tab-recocinando.active {
+    background-color: var(--safari-surface-dark, #1E1E1E) !important;
+    color: #ff6e40 !important;
+    border-color: #ff6e40 #ff6e40 var(--safari-surface-dark, #1E1E1E) !important;
+    border-top: 3px solid #ff6e40 !important;
+    box-shadow: 0 -3px 12px rgba(230, 81, 0, 0.35);
+}
+
+/* Insignias numéricas en pestañas */
+.tab-counter {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.55rem;
+    font-weight: 700;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.badge-recocinando-tab {
+    background-color: #e65100 !important;
+    color: #ffffff !important;
+}
+
+/* ------------------------------------------------------------------------------
+   2. CONTENEDOR PRINCIPAL DE PANELES (TABS CONTENT)
+   ------------------------------------------------------------------------------ */
+
+.chrome-tab-content {
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid #2a2a2a;
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    padding: 1.5rem;
+    min-height: 480px;
+    color: #F8F9FA;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.tab-pane-cocina {
+    animation: fadeInTab 0.2s ease-in-out;
+}
+
+@keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------------------------------------------------------
+   3. ESTILOS DE TARJETAS DE COMANDA (CARDS)
+   ------------------------------------------------------------------------------ */
+
+.comanda-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #252525 !important;
+    color: #F8F9FA;
+}
+
+.comanda-card:hover {
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45) !important;
+    transform: translateY(-2px);
+}
+
+.comanda-fade-out {
+    transition: all 0.35s ease;
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+/* Bordes y estados por fase */
+.card-en-espera {
+    border: 2px solid #0dcaf0 !important;
+}
+
+.card-preparacion {
+    border: 2px solid var(--safari-gold, #F5B041) !important;
+}
+
+.card-listo {
+    border: 2px solid #28a745 !important;
+}
+
+.card-entregado {
+    border: 1px solid #444444 !important;
+    opacity: 0.88;
+}
+
+/* ------------------------------------------------------------------------------
+   4. ESTILOS DE ALERTA PARA RE-ORDEN / RE-COCINANDO (PRIORIDAD OPERATIVA)
+   ------------------------------------------------------------------------------ */
+
+.card-reorden {
+    border: 2px solid #ff6e40 !important;
+    background-color: #27160c !important;
+    box-shadow: 0 6px 18px rgba(230, 81, 0, 0.3) !important;
+}
+
+.reorden-header {
+    background-color: #3d1c0b !important;
+    color: #ffab91 !important;
+    border-bottom: 2px solid #ff6e40 !important;
+}
+
+.badge-reorden {
+    background-color: #e65100 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.reorden-motivo {
+    background-color: #331d10;
+    border-left: 4px solid #ff6e40;
+    color: #ffcc80;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+
+/* Animación de alerta visual pulsante */
+.animate-pulse {
+    animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.04); opacity: 0.92; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ------------------------------------------------------------------------------
+   5. MODAL RE-ORDEN Y COMPONENTES
+   ------------------------------------------------------------------------------ */
+
+.modal-dialog-reorden {
+    max-width: 480px;
+}
+
+.reorden-badge-tag {
+    background-color: #ff5722;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.font-2xs {
+    font-size: 0.7rem;
+}
+
+.font-xs {
+    font-size: 0.8rem;
+}
+
+.font-sm {
+    font-size: 0.875rem;
+}

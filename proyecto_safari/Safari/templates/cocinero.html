@@ -1,0 +1,485 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monitor de Cocina • SafariPOS — Gestión Gastronómica & Aventura</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/safari-pos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/cocina.css' %}">
+</head>
+<body class="bg-light">
+
+    <!-- Header Principal -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 py-2 shadow-sm sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold d-flex align-items-center gap-2">
+                <span class="fs-4">🦁</span>
+                <span>SafariPOS — Gestión Gastronómica & Aventura • Monitor de Cocina</span>
+            </span>
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-white small text-end lh-1 d-none d-sm-block">
+                    <strong class="d-block">{{ usuario }}</strong>
+                    <span class="badge bg-danger text-uppercase">{{ rol }}</span>
+                </div>
+                <a href="/logout/" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-4">
+        <div class="d-none">{% csrf_token %}</div>
+
+        <!-- Encabezado de la Pantalla de Cocina -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">Control de Comandas y Producción</h3>
+                <p class="text-muted small mb-0">Gestión de tickets en tiempo real. Organizado por fases operativas y sección prioritaria para cambios o recalentados.</p>
+            </div>
+            <div class="text-end d-none d-md-block">
+                <span class="badge bg-dark px-3 py-2 text-uppercase font-xs">
+                    <i class="bi bi-clock-history me-1"></i> Auto-sincronizado
+                </span>
+            </div>
+        </div>
+
+        <!-- Contenedor dinámico de alertas -->
+        <div id="alertContainerCocina"></div>
+
+        <!-- ====================================================================
+             BARRA SUPERIOR CON PESTAÑAS (TABS) ESTILO NAVEGADOR CHROME
+             Dividida exactamente en 5 secciones:
+             1. En Espera
+             2. Preparación
+             3. Listo
+             4. Entregado
+             5. Re-Cocinando (Órdenes re-emitidas con distintivo visible)
+             ==================================================================== -->
+        <div class="chrome-tabstrip-container">
+            <nav class="chrome-tabstrip" role="tablist" aria-label="Fases operativas de cocina" data-tab-activa="{{ tab_activa|default:'en_espera' }}">
+                <!-- Pestaña 1: En Espera -->
+                <button type="button" class="chrome-tab {% if not tab_activa or tab_activa == 'en_espera' %}active{% endif %}" data-tab-target="en_espera" role="tab" aria-selected="{% if not tab_activa or tab_activa == 'en_espera' %}true{% else %}false{% endif %}" id="tab-btn-en_espera">
+                    <i class="bi bi-hourglass-split text-info"></i>
+                    <span>En Espera</span>
+                    <span class="badge bg-info text-dark tab-counter" id="tab-counter-en_espera">{{ count_en_espera|default:"0" }}</span>
+                </button>
+
+                <!-- Pestaña 2: Preparación -->
+                <button type="button" class="chrome-tab {% if tab_activa == 'preparacion' %}active{% endif %}" data-tab-target="preparacion" role="tab" aria-selected="{% if tab_activa == 'preparacion' %}true{% else %}false{% endif %}" id="tab-btn-preparacion">
+                    <i class="bi bi-fire text-warning"></i>
+                    <span>Preparación</span>
+                    <span class="badge bg-warning text-dark tab-counter" id="tab-counter-preparacion">{{ count_preparacion|default:"0" }}</span>
+                </button>
+
+                <!-- Pestaña 3: Listo -->
+                <button type="button" class="chrome-tab {% if tab_activa == 'listo' %}active{% endif %}" data-tab-target="listo" role="tab" aria-selected="{% if tab_activa == 'listo' %}true{% else %}false{% endif %}" id="tab-btn-listo">
+                    <i class="bi bi-bell-fill text-success"></i>
+                    <span>Listo</span>
+                    <span class="badge bg-success tab-counter" id="tab-counter-listo">{{ count_listo|default:"0" }}</span>
+                </button>
+
+                <!-- Pestaña 4: Entregado -->
+                <button type="button" class="chrome-tab {% if tab_activa == 'entregado' %}active{% endif %}" data-tab-target="entregado" role="tab" aria-selected="{% if tab_activa == 'entregado' %}true{% else %}false{% endif %}" id="tab-btn-entregado">
+                    <i class="bi bi-check2-all text-secondary"></i>
+                    <span>Entregado</span>
+                    <span class="badge bg-secondary tab-counter" id="tab-counter-entregado">{{ count_entregado|default:"0" }}</span>
+                </button>
+
+                <!-- Pestaña 5: Re-Cocinando (Re-órdenes prioritarias con etiqueta/borde distintivo) -->
+                <button type="button" class="chrome-tab chrome-tab-recocinando {% if tab_activa == 'recocinando' %}active{% endif %}" data-tab-target="recocinando" role="tab" aria-selected="{% if tab_activa == 'recocinando' %}true{% else %}false{% endif %}" id="tab-btn-recocinando">
+                    <i class="bi bi-arrow-repeat text-danger"></i>
+                    <span>Re-Cocinando</span>
+                    <span class="badge badge-reorden tab-counter animate-pulse" id="tab-counter-recocinando">{{ count_recocinando|default:"0" }}</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- ====================================================================
+             CONTENEDOR DE PANELES DE COMANDAS (TABS CONTENT)
+             Muestra únicamente el contenedor seleccionado sin recargar la página
+             ==================================================================== -->
+        <div class="chrome-tab-content">
+
+            <!-- ----------------------------------------------------------------
+                 PANEL 1: EN ESPERA
+                 ---------------------------------------------------------------- -->
+            <section class="tab-pane-cocina {% if tab_activa and tab_activa != 'en_espera' %}d-none{% endif %}" id="pane-en_espera" data-estado-pane="en_espera">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-hourglass-split text-info me-1"></i> Comandas En Espera
+                        </h5>
+                        <small class="text-muted">Tickets recepcionados de barra y garzones pendientes de iniciar preparación en fogones.</small>
+                    </div>
+                    <span class="badge bg-info text-dark font-xs">Cola de Espera</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="contenedorEnEspera">
+                    {% for c in comandas_en_espera %}
+                    <div class="col card-comanda-col" id="col-comanda-{{ c.id }}">
+                        <div class="card h-100 shadow-sm comanda-card card-en-espera">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <strong class="fs-6 text-dark">{{ c.folio }}</strong>
+                                        <span class="badge {% if c.tipo_pedido == 'barra' %}bg-primary{% else %}bg-secondary{% endif %} font-2xs text-uppercase">{{ c.tipo_pedido|default:"mesa" }}</span>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ c.fecha|date:"H:i:s" }} • {{ c.mesa }}</small>
+                                </div>
+                                <span class="badge bg-info text-dark">EN ESPERA</span>
+                            </div>
+
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    {% if c.notas %}
+                                    <div class="alert alert-warning py-1 px-2 mb-2 small border-start border-warning border-4">
+                                        <strong class="d-block font-xs text-dark"><i class="bi bi-chat-left-dots-fill me-1 text-warning"></i> Nota / Observación:</strong>
+                                        <span class="text-dark fw-medium">{{ c.notas }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <strong class="text-muted small text-uppercase d-block mb-1">Detalle del Pedido:</strong>
+                                    <div class="p-2 bg-light rounded-2 border mb-3 small fw-bold">
+                                        {{ c.items }}
+                                    </div>
+                                </div>
+
+                                <!-- Botón de Transición: Iniciar Preparación / Preparar pedido -->
+                                <button type="button" class="btn btn-warning w-100 fw-bold py-2 shadow-sm" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="preparacion" title="Preparar pedido">
+                                    <i class="bi bi-fire me-1"></i> Iniciar Preparación • Preparar pedido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted empty-state" id="empty-state-en_espera">
+                        <i class="bi bi-check2-circle fs-1 d-block mb-2 text-success"></i>
+                        <h5 class="fw-bold text-dark">Sin comandas en espera</h5>
+                        <p class="small text-muted mb-0">No hay tickets pendientes de entrar a cocina en este momento.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- ----------------------------------------------------------------
+                 PANEL 2: PREPARACIÓN
+                 ---------------------------------------------------------------- -->
+            <section class="tab-pane-cocina {% if tab_activa != 'preparacion' %}d-none{% endif %}" id="pane-preparacion" data-estado-pane="preparacion">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-fire text-warning me-1"></i> Órdenes en Preparación
+                        </h5>
+                        <small class="text-muted">Platillos actualmente elaborándose en la cocina activa.</small>
+                    </div>
+                    <span class="badge bg-warning text-dark font-xs">En Elaboración</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="contenedorPreparacion">
+                    {% for c in comandas_preparacion %}
+                    <div class="col card-comanda-col" id="col-comanda-{{ c.id }}">
+                        <div class="card h-100 shadow-sm comanda-card card-preparacion">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <strong class="fs-6 text-dark">{{ c.folio }}</strong>
+                                        <span class="badge {% if c.tipo_pedido == 'barra' %}bg-primary{% else %}bg-secondary{% endif %} font-2xs text-uppercase">{{ c.tipo_pedido|default:"mesa" }}</span>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ c.fecha|date:"H:i:s" }} • {{ c.mesa }}</small>
+                                </div>
+                                <span class="badge bg-warning text-dark">PREPARACIÓN</span>
+                            </div>
+
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    {% if c.notas %}
+                                    <div class="alert alert-warning py-1 px-2 mb-2 small border-start border-warning border-4">
+                                        <strong class="d-block font-xs text-dark"><i class="bi bi-chat-left-dots-fill me-1 text-warning"></i> Nota / Observación:</strong>
+                                        <span class="text-dark fw-medium">{{ c.notas }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <strong class="text-muted small text-uppercase d-block mb-1">Detalle del Pedido:</strong>
+                                    <div class="p-2 bg-light rounded-2 border mb-3 small fw-bold">
+                                        {{ c.items }}
+                                    </div>
+                                </div>
+
+                                <!-- Botón de Transición: Marcar Listo -->
+                                <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="listo">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Marcar Listo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted empty-state" id="empty-state-preparacion">
+                        <i class="bi bi-cup-hot fs-1 d-block mb-2 text-warning"></i>
+                        <h5 class="fw-bold text-dark">Fogones despejados</h5>
+                        <p class="small text-muted mb-0">No hay platillos en cocción activa actualmente.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- ----------------------------------------------------------------
+                 PANEL 3: LISTO
+                 ---------------------------------------------------------------- -->
+            <section class="tab-pane-cocina {% if tab_activa != 'listo' %}d-none{% endif %}" id="pane-listo" data-estado-pane="listo">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-bell-fill text-success me-1"></i> Platillos Listos para Entrega
+                        </h5>
+                        <small class="text-muted">Órdenes finalizadas esperando ser recogidas por el garzón o despachadas en barra.</small>
+                    </div>
+                    <span class="badge bg-success font-xs">Listos para Despacho</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="contenedorListo">
+                    {% for c in comandas_listo %}
+                    <div class="col card-comanda-col" id="col-comanda-{{ c.id }}">
+                        <div class="card h-100 shadow-sm comanda-card card-listo">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <strong class="fs-6 text-dark">{{ c.folio }}</strong>
+                                        <span class="badge {% if c.tipo_pedido == 'barra' %}bg-primary{% else %}bg-secondary{% endif %} font-2xs text-uppercase">{{ c.tipo_pedido|default:"mesa" }}</span>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ c.fecha|date:"H:i:s" }} • {{ c.mesa }}</small>
+                                </div>
+                                <span class="badge bg-success">LISTO</span>
+                            </div>
+
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    {% if c.notas %}
+                                    <div class="alert alert-warning py-1 px-2 mb-2 small border-start border-warning border-4">
+                                        <strong class="d-block font-xs text-dark"><i class="bi bi-chat-left-dots-fill me-1 text-warning"></i> Nota / Observación:</strong>
+                                        <span class="text-dark fw-medium">{{ c.notas }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <strong class="text-muted small text-uppercase d-block mb-1">Detalle del Pedido:</strong>
+                                    <div class="p-2 bg-light rounded-2 border mb-3 small fw-bold">
+                                        {{ c.items }}
+                                    </div>
+                                </div>
+
+                                <!-- Botón de Transición: Entregar -->
+                                <button type="button" class="btn btn-primary w-100 fw-bold py-2 shadow-sm" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="entregado">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> Entregar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted empty-state" id="empty-state-listo">
+                        <i class="bi bi-bell-slash fs-1 d-block mb-2 text-secondary"></i>
+                        <h5 class="fw-bold text-dark">Bandeja de salida vacía</h5>
+                        <p class="small text-muted mb-0">No hay órdenes terminadas pendientes de ser servidas al cliente.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- ----------------------------------------------------------------
+                 PANEL 4: ENTREGADO
+                 ---------------------------------------------------------------- -->
+            <section class="tab-pane-cocina {% if tab_activa != 'entregado' %}d-none{% endif %}" id="pane-entregado" data-estado-pane="entregado">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-check2-all text-secondary me-1"></i> Pedidos Entregados Recientemente
+                        </h5>
+                        <small class="text-muted">Historial de platillos servidos. Permite solicitar 'Re-hacer' en caso de cambios o solicitudes del comensal.</small>
+                    </div>
+                    <span class="badge bg-secondary font-xs">Historial Reciente</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="contenedorEntregado">
+                    {% for ent in comandas_entregado %}
+                    <div class="col card-comanda-col" id="col-comanda-{{ ent.id }}">
+                        <div class="card h-100 shadow-sm comanda-card card-entregado">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <strong class="fs-6 text-dark">{{ ent.folio }}</strong>
+                                        <span class="badge bg-secondary font-2xs text-uppercase">{{ ent.tipo_pedido|default:"mesa" }}</span>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ ent.fecha|date:"H:i:s" }} • {{ ent.mesa }}</small>
+                                </div>
+                                <span class="badge bg-secondary">Entregado</span>
+                            </div>
+
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="text-muted text-truncate mb-2 font-sm fw-medium">
+                                        {{ ent.items }}
+                                    </div>
+                                </div>
+
+                                <!-- Botón 'Re-hacer' dentro de la pestaña Entregado -->
+                                <button type="button" class="btn btn-outline-danger w-100 fw-bold py-2" data-action="abrir-modal-reorden" data-comanda-id="{{ ent.id }}" data-folio="{{ ent.folio }}" data-mesa="{{ ent.mesa }}">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Re-hacer / Re-orden
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted empty-state" id="empty-state-entregado">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 text-muted"></i>
+                        <h5 class="fw-bold text-dark">Sin registros de entrega</h5>
+                        <p class="small text-muted mb-0">Los pedidos entregados aparecerán listados aquí.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- ----------------------------------------------------------------
+                 PANEL 5: RE-COCINANDO (RE-ÓRDENES CON DISTINTIVO ÁMBAR / PRIORIDAD)
+                 ---------------------------------------------------------------- -->
+            <section class="tab-pane-cocina {% if tab_activa != 'recocinando' %}d-none{% endif %}" id="pane-recocinando" data-estado-pane="recocinando">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-warning">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge badge-reorden fs-6 animate-pulse">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> ATENCIÓN PRIORITARIA
+                            </span>
+                            <h5 class="fw-bold mb-0 text-dark">
+                                Re-Cocinando • Platillos Re-emitidos (Cambios / Recalentados)
+                            </h5>
+                        </div>
+                        <small class="text-muted">Platillos devueltos por el comensal. Tienen prioridad operativa sobre la cola regular de preparación.</small>
+                    </div>
+                    <span class="badge bg-danger font-xs">Urgente</span>
+                </div>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="contenedorRecocinando">
+                    {% for c in comandas_reorden %}
+                    <div class="col card-comanda-col" id="col-comanda-{{ c.id }}">
+                        <div class="card h-100 shadow card-reorden comanda-card">
+                            <div class="card-header reorden-header d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <strong class="fs-6 text-dark">{{ c.folio }}</strong>
+                                        <span class="badge bg-dark font-2xs text-uppercase">{{ c.tipo_pedido|default:"mesa" }}</span>
+                                    </div>
+                                    <small class="text-dark fw-bold"><i class="bi bi-clock me-1"></i>{{ c.fecha|date:"H:i:s" }} • {{ c.mesa }}</small>
+                                </div>
+                                <span class="badge badge-reorden fs-6" id="badgeEstado-{{ c.id }}">
+                                    <i class="bi bi-arrow-repeat me-1"></i> RE_ORDEN
+                                </span>
+                            </div>
+
+                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                <div>
+                                    <!-- Motivo de Re-emisión destacado -->
+                                    <div class="reorden-motivo mb-2">
+                                        <strong class="d-block font-xs text-dark"><i class="bi bi-arrow-repeat me-1 text-danger"></i> MOTIVO DE RE-EMISIÓN:</strong>
+                                        <span class="text-dark fw-bold">{{ c.motivo_reemision|default:"Cambio o recalentado urgente" }}</span>
+                                    </div>
+
+                                    {% if c.notas %}
+                                    <div class="alert alert-warning py-1 px-2 mb-2 small border-start border-warning border-4">
+                                        <strong class="d-block font-xs text-dark"><i class="bi bi-chat-left-dots-fill me-1 text-warning"></i> Nota Original:</strong>
+                                        <span class="text-dark fw-medium">{{ c.notas }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <strong class="text-muted small text-uppercase d-block mb-1">Platillo a Re-hacer:</strong>
+                                    <div class="p-2 bg-white rounded-2 border mb-3 small fw-bold">
+                                        {{ c.items }}
+                                    </div>
+                                </div>
+
+                                <!-- Botones de Transición para Re-orden -->
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-warning fw-semibold" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="preparacion" title="Preparar pedido">
+                                        <i class="bi bi-fire me-1"></i> Iniciar Preparación • Preparar pedido
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-success fw-bold" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="listo">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Marcar Listo
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="cambiar-estado-comanda" data-comanda-id="{{ c.id }}" data-nuevo-estado="entregado">
+                                        Entregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5 text-muted empty-state" id="empty-state-recocinando">
+                        <i class="bi bi-shield-check fs-1 d-block mb-2 text-success"></i>
+                        <h5 class="fw-bold text-dark">Sin re-órdenes activas</h5>
+                        <p class="small text-muted mb-0">No hay órdenes devueltas o platillos para recalentar pendientes en cocina.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Modal Re-hacer / Re-orden de Comanda -->
+    <div class="modal fade" id="modalReordenComanda" tabindex="-1" aria-labelledby="modalReordenComandaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-reorden">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="modalReordenComandaLabel">
+                        <i class="bi bi-arrow-repeat me-2"></i> Re-hacer Comanda • <span id="reordenModalFolio">-</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="reordenComandaId" value="">
+
+                    <div class="alert alert-warning small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        La orden pasará al estado <strong>RE_ORDEN</strong> con alerta prioritaria visible y regresará de inmediato a la cola activa en la pestaña <strong>Re-Cocinando</strong>.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reordenMotivoSelect" class="form-label small fw-bold text-muted text-uppercase mb-1">Motivo Frecuente</label>
+                        <select class="form-select form-select-sm mb-2" id="reordenMotivoSelect">
+                            <option value="">-- Seleccione un motivo rápido --</option>
+                            <option value="Platillo frío, cliente solicita recalentar">Platillo frío, cliente solicita recalentar</option>
+                            <option value="Cambio por preferencia de cocción del cliente">Cambio por preferencia de cocción</option>
+                            <option value="Cambio de guarnición o salsa solicitada">Cambio de guarnición o salsa solicitada</option>
+                            <option value="Error en la preparación del platillo">Error en la preparación del platillo</option>
+                            <option value="Platillo devuelto por el comensal">Platillo devuelto por el comensal</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reordenMotivoTexto" class="form-label small fw-bold text-muted text-uppercase mb-1">Especificación del Motivo</label>
+                        <textarea id="reordenMotivoTexto" class="form-control form-control-sm" rows="3" placeholder="Ej: Hamburguesa fría, cliente pide recalentar con queso derretido..."></textarea>
+                        <small class="text-muted font-2xs">Este motivo quedará visible en la tarjeta de cocina y registrado en auditoría.</small>
+                    </div>
+
+                    <div id="alertaErrorReorden" class="alert alert-danger py-2 px-3 small d-none"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger btn-sm fw-bold" id="btnConfirmarReorden" data-action="confirmar-reorden">
+                        <i class="bi bi-arrow-repeat me-1"></i> Confirmar y Enviar a Cocina
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts Modulares -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/cocina_tabs.js' %}"></script>
+    <script src="{% static 'js/seguridad_formularios.js' %}"></script>
+    <script src="{% static 'js/validaciones.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
+  <defs>
+    <!-- Degradado de cielo nocturno / atardecer sabana -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0c"/>
+      <stop offset="35%" stop-color="#141118"/>
+      <stop offset="65%" stop-color="#241812"/>
+      <stop offset="85%" stop-color="#4a2e12"/>
+      <stop offset="100%" stop-color="#7a4714"/>
+    </linearGradient>
+
+    <!-- Resplandor solar/lunar dorado en el horizonte -->
+    <radialGradient id="sunGlow" cx="65%" cy="75%" r="45%">
+      <stop offset="0%" stop-color="#f5b041" stop-opacity="0.6"/>
+      <stop offset="30%" stop-color="#e67e22" stop-opacity="0.35"/>
+      <stop offset="65%" stop-color="#d35400" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0a0a0c" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Estrellas sutiles -->
+    <radialGradient id="starGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f5b041" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Cielo de fondo -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+  <rect width="1920" height="1080" fill="url(#sunGlow)"/>
+
+  <!-- Sol poniente safari -->
+  <circle cx="1250" cy="740" r="140" fill="#f5b041" opacity="0.35"/>
+  <circle cx="1250" cy="740" r="100" fill="#f39c12" opacity="0.55"/>
+  <circle cx="1250" cy="740" r="70" fill="#f1c40f" opacity="0.85"/>
+
+  <!-- Estrellas y constelaciones distantes -->
+  <g fill="#f8f9fa" opacity="0.65">
+    <circle cx="180" cy="120" r="1.5"/>
+    <circle cx="340" cy="85" r="2"/>
+    <circle cx="520" cy="160" r="1"/>
+    <circle cx="710" cy="95" r="2"/>
+    <circle cx="890" cy="140" r="1.5"/>
+    <circle cx="1050" cy="80" r="2.5"/>
+    <circle cx="1320" cy="110" r="1.5"/>
+    <circle cx="1490" cy="70" r="2"/>
+    <circle cx="1680" cy="130" r="1.5"/>
+    <circle cx="1820" cy="90" r="2"/>
+    <circle cx="250" cy="240" r="1"/>
+    <circle cx="480" cy="290" r="1.5"/>
+    <circle cx="820" cy="220" r="1"/>
+    <circle cx="1150" cy="210" r="2"/>
+    <circle cx="1580" cy="230" r="1"/>
+    <circle cx="1750" cy="270" r="1.5"/>
+  </g>
+
+  <!-- Siluetas de aves migratorias en vuelo -->
+  <g fill="#1a1410" opacity="0.7">
+    <path d="M 1180 420 Q 1195 410 1210 422 Q 1225 410 1240 420 Q 1225 415 1210 426 Q 1195 415 1180 420 Z"/>
+    <path d="M 1245 400 Q 1256 392 1268 402 Q 1280 392 1292 400 Q 1280 396 1268 405 Q 1256 396 1245 400 Z"/>
+    <path d="M 1210 380 Q 1220 373 1230 381 Q 1240 373 1250 380 Q 1240 376 1230 384 Q 1220 376 1210 380 Z"/>
+    <path d="M 1150 440 Q 1162 432 1174 442 Q 1186 432 1198 440 Q 1186 436 1174 445 Q 1162 436 1150 440 Z"/>
+    <path d="M 1280 430 Q 1290 423 1300 431 Q 1310 423 1320 430 Q 1310 426 1300 434 Q 1290 426 1280 430 Z"/>
+  </g>
+
+  <!-- Montañas lejanas en la bruma (Capa 1) -->
+  <path d="M 0 780 Q 220 710 450 740 T 950 730 T 1450 710 T 1920 740 L 1920 1080 L 0 1080 Z" fill="#1b120c" opacity="0.45"/>
+
+  <!-- Colinas intermedias (Capa 2) -->
+  <path d="M 0 810 Q 320 760 620 790 T 1200 770 T 1700 780 T 1920 800 L 1920 1080 L 0 1080 Z" fill="#140d08" opacity="0.75"/>
+
+  <!-- Sabana primer plano (Capa 3) -->
+  <path d="M 0 860 Q 280 840 580 870 T 1150 850 T 1620 870 T 1920 860 L 1920 1080 L 0 1080 Z" fill="#0d0906"/>
+
+  <!-- Árbol Acacia Africana Grande (Izquierda) -->
+  <g fill="#080604">
+    <!-- Tronco curvado -->
+    <path d="M 280 880 C 275 830, 260 760, 250 710 C 245 680, 235 640, 220 600 C 215 585, 205 565, 195 550 C 205 555, 225 570, 235 590 C 245 620, 255 660, 265 700 C 280 750, 295 820, 305 880 Z"/>
+    <!-- Ramas principales -->
+    <path d="M 220 600 C 200 570, 160 530, 110 510 C 130 515, 160 535, 185 560 C 205 580, 215 595, 220 600 Z"/>
+    <path d="M 220 600 C 240 560, 280 520, 340 490 C 315 505, 280 535, 255 565 C 235 585, 225 595, 220 600 Z"/>
+    <path d="M 185 560 C 160 530, 110 490, 50 480 C 80 490, 125 515, 155 540 Z"/>
+    <path d="M 255 565 C 290 535, 350 495, 430 480 C 390 495, 335 525, 290 550 Z"/>
+    <!-- Follaje estilo sombrilla acacia -->
+    <ellipse cx="90" cy="480" rx="90" ry="22"/>
+    <ellipse cx="60" cy="475" rx="60" ry="16"/>
+    <ellipse cx="140" cy="495" rx="80" ry="20"/>
+    <ellipse cx="220" cy="510" rx="100" ry="24"/>
+    <ellipse cx="280" cy="485" rx="110" ry="26"/>
+    <ellipse cx="360" cy="470" rx="120" ry="28"/>
+    <ellipse cx="430" cy="465" rx="85" ry="20"/>
+    <ellipse cx="320" cy="455" rx="95" ry="22"/>
+    <ellipse cx="200" cy="465" rx="85" ry="20"/>
+  </g>
+
+  <!-- Árbol Acacia Africana Mediano (Derecha) -->
+  <g fill="#080604">
+    <path d="M 1680 870 C 1675 820, 1670 770, 1680 720 C 1685 690, 1700 660, 1715 630 C 1700 645, 1680 675, 1670 705 C 1660 740, 1655 800, 1660 870 Z"/>
+    <path d="M 1700 660 C 1720 635, 1760 610, 1810 595 C 1780 610, 1745 630, 1725 650 Z"/>
+    <path d="M 1685 680 C 1660 655, 1620 630, 1560 620 C 1590 630, 1630 650, 1655 670 Z"/>
+    <!-- Follaje sombrilla derecha -->
+    <ellipse cx="1580" cy="615" rx="70" ry="18"/>
+    <ellipse cx="1660" cy="625" rx="80" ry="20"/>
+    <ellipse cx="1740" cy="620" rx="90" ry="22"/>
+    <ellipse cx="1820" cy="590" rx="85" ry="20"/>
+    <ellipse cx="1710" cy="600" rx="75" ry="18"/>
+  </g>
+
+  <!-- Siluetas de Animales Safari -->
+
+  <!-- Familia de Jirafas (Centro-Izquierda) -->
+  <g fill="#080604">
+    <!-- Jirafa Adulta -->
+    <!-- Patas -->
+    <line x1="520" y1="860" x2="525" y2="760" stroke="#080604" stroke-width="5"/>
+    <line x1="532" y1="860" x2="535" y2="760" stroke="#080604" stroke-width="4.5"/>
+    <line x1="575" y1="860" x2="570" y2="765" stroke="#080604" stroke-width="4.5"/>
+    <line x1="587" y1="860" x2="580" y2="765" stroke="#080604" stroke-width="4"/>
+    <!-- Cuerpo -->
+    <ellipse cx="552" cy="755" rx="36" ry="24" transform="rotate(-15 552 755)"/>
+    <!-- Cuello largo y elegante -->
+    <path d="M 532 750 C 530 720, 520 660, 510 600 C 506 575, 502 550, 498 530 L 510 532 C 516 555, 524 600, 534 650 C 542 690, 552 730, 556 750 Z"/>
+    <!-- Cabeza y orejas -->
+    <ellipse cx="496" cy="528" rx="10" ry="6" transform="rotate(-30 496 528)"/>
+    <polygon points="496,524 494,514 498,522"/>
+    <!-- Cola -->
+    <path d="M 586 760 Q 594 785 590 810" stroke="#080604" stroke-width="2.5" fill="none"/>
+
+    <!-- Jirafa Pequeña (Cría) -->
+    <line x1="620" y1="860" x2="623" y2="795" stroke="#080604" stroke-width="3.5"/>
+    <line x1="628" y1="860" x2="630" y2="795" stroke="#080604" stroke-width="3"/>
+    <line x1="655" y1="860" x2="652" y2="800" stroke="#080604" stroke-width="3"/>
+    <line x1="663" y1="860" x2="658" y2="800" stroke="#080604" stroke-width="2.8"/>
+    <ellipse cx="642" cy="792" rx="22" ry="15" transform="rotate(-12 642 792)"/>
+    <path d="M 628 788 C 625 765, 618 730, 612 690 L 620 692 C 626 730, 634 765, 642 788 Z"/>
+    <ellipse cx="610" cy="688" rx="7" ry="4" transform="rotate(-25 610 688)"/>
+  </g>
+
+  <!-- Elefante Majestuoso (Centro) -->
+  <g fill="#080604">
+    <!-- Patas robustas -->
+    <rect x="800" y="805" width="18" height="60" rx="4"/>
+    <rect x="826" y="805" width="16" height="58" rx="4"/>
+    <rect x="875" y="805" width="16" height="58" rx="4"/>
+    <rect x="898" y="805" width="18" height="60" rx="4"/>
+    <!-- Cuerpo masivo -->
+    <ellipse cx="855" cy="790" rx="58" ry="44"/>
+    <!-- Cabeza y frente -->
+    <ellipse cx="792" cy="775" rx="30" ry="32"/>
+    <!-- Oreja grande africana -->
+    <path d="M 808 755 C 830 765, 835 810, 805 825 C 795 815, 792 780, 808 755 Z"/>
+    <!-- Trompa curvada -->
+    <path d="M 770 785 C 750 805, 742 835, 745 855 C 748 862, 755 862, 755 855 C 752 840, 758 815, 776 800 Z"/>
+    <!-- Colmillo de marfil visible con brillo sutil -->
+    <path d="M 776 805 C 765 818, 758 828, 750 832 C 756 824, 768 812, 778 803 Z" fill="#f5b041" opacity="0.8"/>
+    <!-- Cola -->
+    <path d="M 912 795 Q 922 815 918 838" stroke="#080604" stroke-width="3" fill="none"/>
+  </g>
+
+  <!-- Roca de los Leones (Pride Rock) con León Guardián (Derecha-Centro) -->
+  <g fill="#080604">
+    <!-- Afloramiento rocoso saliente -->
+    <polygon points="1350,865 1420,800 1520,780 1590,830 1620,865"/>
+    <polygon points="1440,865 1490,770 1540,770 1560,865"/>
+
+    <!-- León Erguido sobre la Roca -->
+    <!-- Patas -->
+    <line x1="1485" y1="770" x2="1485" y2="745" stroke="#080604" stroke-width="4"/>
+    <line x1="1495" y1="770" x2="1493" y2="745" stroke="#080604" stroke-width="3.5"/>
+    <line x1="1520" y1="770" x2="1518" y2="745" stroke="#080604" stroke-width="4"/>
+    <line x1="1528" y1="770" x2="1525" y2="745" stroke="#080604" stroke-width="3.5"/>
+    <!-- Cuerpo de felino -->
+    <ellipse cx="1508" cy="740" rx="24" ry="14"/>
+    <!-- Melena imponente -->
+    <circle cx="1488" cy="724" r="15"/>
+    <ellipse cx="1484" cy="726" rx="14" ry="18"/>
+    <!-- Cabeza y hocico altivo mirando al horizonte -->
+    <ellipse cx="1476" cy="720" rx="8" ry="6"/>
+    <!-- Cola con mechón -->
+    <path d="M 1532 738 Q 1550 746 1546 760" stroke="#080604" stroke-width="2.5" fill="none"/>
+    <circle cx="1546" cy="761" r="2.5"/>
+  </g>
+
+  <!-- Hierbas y pastizales de la sabana en el borde inferior -->
+  <g fill="#0a0705">
+    <path d="M 100 870 L 105 845 L 110 870 L 115 840 L 120 870 Z"/>
+    <path d="M 380 875 L 385 850 L 390 875 L 395 855 L 400 875 Z"/>
+    <path d="M 720 865 L 725 842 L 730 865 L 735 848 L 740 865 Z"/>
+    <path d="M 1020 860 L 1025 838 L 1030 860 L 1035 844 L 1040 860 Z"/>
+    <path d="M 1410 865 L 1415 845 L 1420 865 L 1425 850 L 1430 865 Z"/>
+    <path d="M 1780 870 L 1785 848 L 1790 870 L 1795 852 L 1800 870 Z"/>
+  </g>
+</svg>

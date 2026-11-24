@@ -1,0 +1,39 @@
+/* ==========================================================================
+   SafariPOS — Estilos Módulos Mantenedores CRUD
+   Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   ========================================================================== */
+
+.nav-pills .nav-link {
+    color: #adb5bd;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: #2a2a2a;
+    color: #f8f9fa;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #F5B041 0%, #FFA000 100%);
+    color: #121212;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(245, 176, 65, 0.35);
+}
+
+.crud-card {
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    color: #F8F9FA;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.crud-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(245, 176, 65, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}

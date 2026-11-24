@@ -1,0 +1,272 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Control de Salón y Mesas • SafariPOS — Gestión Gastronómica & Aventura</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/safari-pos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mesero.css' %}">
+</head>
+<body class="bg-light">
+
+    <!-- Header -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 py-2 shadow-sm sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold d-flex align-items-center gap-2">
+                <span class="fs-4">🦁</span>
+                <span>SafariPOS — Gestión Gastronómica & Aventura • Control de Salón y Mesas</span>
+            </span>
+
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-white small text-end lh-1 d-none d-sm-block">
+                    <strong class="d-block">{{ usuario }}</strong>
+                    <span class="badge bg-primary text-uppercase">{{ rol }}</span>
+                </div>
+                <a href="/logout/" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-4">
+        <div class="d-none">{% csrf_token %}</div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="fw-bold mb-0">Control de Mesas y Salón</h3>
+                <p class="text-muted small mb-0">Gestione el estado de ocupación de mesas e indique si la comida fue entregada al cliente.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge bg-success px-3 py-2">Desocupada</span>
+                <span class="badge bg-danger px-3 py-2">Ocupada</span>
+                <span class="badge bg-warning text-dark px-3 py-2">Listo para Cobro</span>
+                <span class="badge bg-info text-dark px-3 py-2">Comida Entregada</span>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3">
+            {% for m in mesas %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-2 {% if m.estado == 'LISTO_PARA_COBRO' %}border-warning{% elif m.estado == 'ocupada' %}border-danger{% else %}border-success{% endif %}" id="cardMesa-{{ m.id }}">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <strong class="fs-5">{{ m.nombre }}</strong>
+                        <span class="badge {% if m.estado == 'LISTO_PARA_COBRO' %}bg-warning text-dark{% elif m.estado == 'ocupada' %}bg-danger{% else %}bg-success{% endif %}" id="badgeEstado-{{ m.id }}">
+                            {% if m.estado == 'LISTO_PARA_COBRO' %}LISTO PARA COBRO{% else %}{{ m.estado|upper }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="fs-1 mb-2">🍽️</div>
+
+                            <!-- Alerta de Mesa Lista para Cobro -->
+                            <div class="alert alert-warning py-1 px-2 small mb-2 text-dark font-2xs fw-bold {% if m.estado != 'LISTO_PARA_COBRO' %}d-none{% endif %}" id="alertaListoCobro-{{ m.id }}">
+                                <i class="bi bi-bell-fill me-1"></i> Cuenta solicitada a Caja. En espera de cobro y boleta.
+                            </div>
+
+                            <!-- Indicador de Comida Entregada -->
+                            <div class="mb-2">
+                                <span class="badge {% if m.comida_entregada %}bg-info text-dark{% else %}bg-secondary{% endif %} py-1 px-2" id="badgeComida-{{ m.id }}">
+                                    {% if m.comida_entregada %}
+                                    <i class="bi bi-check2-circle me-1"></i> Comida Entregada
+                                    {% else %}
+                                    <i class="bi bi-clock me-1"></i> Esperando Comida
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <!-- Estado del Pedido Activo si está ocupada o lista para cobro -->
+                            <div id="infoPedido-{{ m.id }}" class="small mb-3 {% if m.estado != 'ocupada' and m.estado != 'LISTO_PARA_COBRO' %}d-none{% endif %}">
+                                <div class="bg-light p-2 rounded-2 border text-start">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted font-2xs">Comanda:</span>
+                                        <strong class="font-xs text-primary" id="folioPedido-{{ m.id }}">
+                                            {% for mid, cmd in comandas_activas.items %}{% if mid == m.id %}{{ cmd.folio }}{% endif %}{% endfor %}
+                                        </strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted font-2xs">Total:</span>
+                                        <strong class="font-xs text-success" id="totalPedido-{{ m.id }}">
+                                            {% for mid, cmd in comandas_activas.items %}{% if mid == m.id %}${{ cmd.total|floatformat:0 }} CLP{% endif %}{% endfor %}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-sm btn-primary fw-bold" id="btnTomarPedido-{{ m.id }}" data-action="abrir-modal-pedido" data-mesa-id="{{ m.id }}" data-mesa-nombre="{{ m.nombre }}" {% if m.estado == 'LISTO_PARA_COBRO' %}disabled title="Mesa esperando liquidación en caja"{% endif %}>
+                                <i class="bi bi-journal-plus me-1"></i> Tomar Pedido
+                            </button>
+
+                            <!-- Botón Explícito: Finalizar Venta / Solicitar Cuenta -->
+                            <button type="button" class="btn btn-sm btn-warning fw-bold text-dark {% if m.estado not in 'ocupada,LISTO_PARA_COBRO' %}d-none{% endif %}" id="btnSolicitarCuenta-{{ m.id }}" data-action="solicitar-cuenta-mesa" data-mesa-id="{{ m.id }}" data-mesa-nombre="{{ m.nombre }}" {% if m.estado == 'LISTO_PARA_COBRO' %}disabled{% endif %}>
+                                <i class="bi bi-receipt-cutoff me-1"></i> {% if m.estado == 'LISTO_PARA_COBRO' %}Cuenta Solicitada (En Caja){% else %}Finalizar Venta / Solicitar Cuenta{% endif %}
+                            </button>
+
+                            <button type="button" class="btn btn-sm {% if m.estado == 'ocupada' or m.estado == 'LISTO_PARA_COBRO' %}btn-outline-success{% else %}btn-outline-danger{% endif %}" id="btnOcupar-{{ m.id }}" data-action="cambiar-mesa" data-mesa-id="{{ m.id }}" data-tipo-accion="toggle_ocupada">
+                                {% if m.estado == 'ocupada' or m.estado == 'LISTO_PARA_COBRO' %}Desocupar Mesa{% else %}Ocupar Mesa{% endif %}
+                            </button>
+
+                            <button type="button" class="btn btn-sm btn-outline-info" data-action="cambiar-mesa" data-mesa-id="{{ m.id }}" data-tipo-accion="toggle_comida">
+                                <i class="bi bi-hand-thumbs-up me-1"></i> Marcar Entrega
+                            </button>
+
+                            <!-- Botón Re-hacer / Re-orden visible para Garzón -->
+                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold {% if not m.comida_entregada %}d-none{% endif %}" id="btnReordenMesa-{{ m.id }}" data-action="abrir-modal-reorden-mesero" data-mesa-id="{{ m.id }}" data-mesa-nombre="{{ m.nombre }}" data-comanda-id="{% for mid, cmd in comandas_activas.items %}{% if mid == m.id %}{{ cmd.id }}{% endif %}{% endfor %}">
+                                <i class="bi bi-arrow-repeat me-1"></i> Re-hacer / Re-orden
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Modal Tomar Pedido de Mesa (Garzón) -->
+    <div class="modal fade" id="modalTomarPedido" tabindex="-1" aria-labelledby="modalTomarPedidoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-620">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalTomarPedidoLabel">
+                        <i class="bi bi-journal-plus me-2"></i> Toma de Pedido • <span id="pedidoMesaTitulo">Mesa</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="pedidoMesaId" value="">
+
+                    <!-- Buscador de Productos en tiempo real -->
+                    <div class="mb-3">
+                        <label for="filtroProductoPedido" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                            <i class="bi bi-search me-1 text-primary"></i> Buscar Producto (Nombre o Categoría)
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="filtroProductoPedido" class="form-control" placeholder="Filtrar por nombre o categoría (sin importar tildes o mayúsculas)...">
+                        </div>
+                    </div>
+
+                    <!-- Lista seleccionable de productos estilo ListView -->
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Catálogo Disponible</label>
+                    <div class="listview-container p-2 mb-3 bg-white" id="listaCatalogoPedido">
+                        {% for p in productos %}
+                        <div class="d-flex justify-content-between align-items-center py-2 px-2 border-bottom item-catalogo-pedido {% if p.stock <= 0 %}opacity-50 bg-light{% endif %}" data-id="{{ p.id }}" data-nombre="{{ p.nombre }}" data-categoria="{{ p.categoria|default:'General' }}" data-stock="{{ p.stock }}">
+                            <div>
+                                <strong class="d-block small text-dark">{{ p.nombre }}</strong>
+                                <span class="text-success small fw-bold">${{ p.precio|floatformat:0 }} CLP</span>
+                                <span class="badge bg-secondary font-3xs ms-1">{{ p.categoria|default:"General" }}</span>
+                                {% if p.stock > 0 %}
+                                <span class="badge bg-light text-muted ms-1 font-2xs">Stock: {{ p.stock }}</span>
+                                {% else %}
+                                <span class="badge bg-danger ms-1 font-2xs">Agotado (0)</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" data-action="restar-producto-pedido" data-id="{{ p.id }}" {% if p.stock <= 0 %}disabled{% endif %}>-</button>
+                                <span class="px-2 fw-bold small text-center min-w-30" id="cant-pedido-{{ p.id }}">0</span>
+                                <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0 fw-bold" data-action="sumar-producto-pedido" data-id="{{ p.id }}" {% if p.stock <= 0 %}disabled title="Producto agotado"{% endif %}>+</button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted small">
+                            No hay productos disponibles en inventario.
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Notas / Comentarios para Cocina -->
+                    <div class="mb-3">
+                        <label for="pedidoNotas" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                            <i class="bi bi-chat-left-dots-fill me-1 text-primary"></i> Notas / Especificaciones de Comanda
+                        </label>
+                        <textarea id="pedidoNotas" class="form-control form-control-sm" rows="2" placeholder="Ej: Hamburguesa sin cebolla, bebidas con hielo, aderezos aparte..."></textarea>
+                        <small class="text-muted font-2xs">Estas notas se envían a la cocina junto con el pedido en estado EN ESPERA.</small>
+                    </div>
+
+                    <!-- Resumen del Pedido y Total -->
+                    <div class="bg-light p-3 rounded-3 border d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small text-muted d-block text-uppercase fw-bold">Total Estimado del Pedido:</span>
+                            <span class="fs-4 fw-bold text-success" id="pedidoTotalDisplay">$0 CLP</span>
+                        </div>
+                        <span class="badge bg-warning text-dark font-xs px-2 py-1">
+                            <i class="bi bi-hourglass-split me-1"></i> Estado Cocina: EN ESPERA
+                        </span>
+                    </div>
+
+                    <div id="alertaErrorPedido" class="alert alert-danger py-2 px-3 small mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success fw-bold" id="btnEnviarComandaCocina" data-action="enviar-comanda-cocina">
+                        <i class="bi bi-send-fill me-1"></i> Enviar Comanda a Cocina (En Espera)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Re-hacer / Re-orden de Platillo (Garzón) -->
+    <div class="modal fade" id="modalReordenMesero" tabindex="-1" aria-labelledby="modalReordenMeseroLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-440">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="modalReordenMeseroLabel">
+                        <i class="bi bi-arrow-repeat me-2"></i> Solicitar Re-orden • <span id="reordenMeseroTitulo">Mesa</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="reordenMeseroMesaId" value="">
+                    <input type="hidden" id="reordenMeseroComandaId" value="">
+
+                    <div class="alert alert-warning small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        El platillo pasará a estado <strong>RE_ORDEN</strong> con alerta prioritaria en cocina.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reordenMeseroMotivoSelect" class="form-label small fw-bold text-muted text-uppercase mb-1">Motivo</label>
+                        <select class="form-select form-select-sm mb-2" id="reordenMeseroMotivoSelect">
+                            <option value="">-- Seleccione un motivo rápido --</option>
+                            <option value="Platillo frío, cliente solicita recalentar">Platillo frío, cliente solicita recalentar</option>
+                            <option value="Cambio de término de cocción">Cambio de término de cocción</option>
+                            <option value="Cambio de guarnición o salsa">Cambio de guarnición o salsa</option>
+                            <option value="Error en la preparación del platillo">Error en la preparación del platillo</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reordenMeseroMotivoTexto" class="form-label small fw-bold text-muted text-uppercase mb-1">Detalle para Cocina</label>
+                        <textarea id="reordenMeseroMotivoTexto" class="form-control form-control-sm" rows="3" placeholder="Ej: Hamburguesa fría, cliente pide recalentar con queso derretido..."></textarea>
+                    </div>
+
+                    <div id="alertaErrorReordenMesero" class="alert alert-danger py-2 px-3 small d-none"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger btn-sm fw-bold" id="btnConfirmarReordenMesero" data-action="confirmar-reorden-mesero">
+                        <i class="bi bi-arrow-repeat me-1"></i> Confirmar y Notificar a Cocina
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Datos y Lógica Modular -->
+    <script id="productos-data" type="application/json">{{ productos_json|safe }}</script>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/mesero.js' %}"></script>
+    <script src="{% static 'js/seguridad_formularios.js' %}"></script>
+    <script src="{% static 'js/validaciones.js' %}"></script>
+</body>
+</html>

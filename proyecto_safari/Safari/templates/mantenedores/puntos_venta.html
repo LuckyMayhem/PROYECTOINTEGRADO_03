@@ -1,0 +1,136 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+
+{% block title %}Mantenedor de Puntos de Venta{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Mantenedor de Puntos de Venta (Cajas POS)</h3>
+        <p class="text-muted mb-0">Gestión de cajas registradoras, terminales táctiles y estaciones de cobro.</p>
+    </div>
+    <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPdv" data-action="nuevo-pdv">
+        <i class="bi bi-plus-circle-fill me-1"></i> Nueva Caja / PDV
+    </button>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-10">ID</th>
+                        <th class="th-w-32">Nombre / Identificador de Caja</th>
+                        <th class="th-w-30">Ubicación Física</th>
+                        <th class="th-w-14 text-center">Estado</th>
+                        <th class="th-w-14 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pv in puntos_venta %}
+                    <tr>
+                        <td><span class="badge bg-light text-dark border">#{{ pv.id }}</span></td>
+                        <td>
+                            <strong class="fs-6 text-dark">
+                                <i class="bi bi-display text-primary me-2"></i>{{ pv.nombre }}
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="text-muted">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ pv.ubicacion|default:"Sin especificar" }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if pv.estado == 'activo' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-bold">
+                                <i class="bi bi-check-circle me-1"></i> Activo
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill fw-bold">
+                                <i class="bi bi-x-circle me-1"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalPdv"
+                                        data-action="editar-pdv"
+                                        data-id="{{ pv.id }}"
+                                        data-nombre="{{ pv.nombre }}"
+                                        data-ubicacion="{{ pv.ubicacion }}"
+                                        data-estado="{{ pv.estado }}"
+                                        title="Editar Caja / PDV">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <a href="/mantenedores/puntos-de-venta/eliminar/{{ pv.id }}/"
+                                   class="btn btn-outline-danger"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar el punto de venta '{{ pv.nombre|escapejs }}'?"
+                                   title="Eliminar Caja">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No hay puntos de venta registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Punto de Venta -->
+<div class="modal fade" id="modalPdv" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/mantenedores/puntos-de-venta/guardar/" method="POST" id="formPdv">
+                {% csrf_token %}
+                <input type="hidden" name="pdv_id" id="pdvId">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalPdvTitulo">
+                        <i class="bi bi-display text-warning me-2"></i> Crear Nuevo Punto de Venta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre / Identificador de Caja <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" id="pdvNombre" class="form-control" required placeholder="Ej: Caja Principal Salón, Caja Terraza 2">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Ubicación Física</label>
+                            <input type="text" name="ubicacion" id="pdvUbicacion" class="form-control" placeholder="Ej: Barra Principal, Sector Terraza Oriente">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado Operacional <span class="text-danger">*</span></label>
+                            <select name="estado" id="pdvEstado" class="form-select">
+                                <option value="activo">Activo (Habilitado para turnos)</option>
+                                <option value="inactivo">Inactivo (En mantenimiento / Fuera de servicio)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold" id="btnGuardarPdv">
+                        <i class="bi bi-save me-1"></i> Guardar Punto de Venta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Mantenedor de Mesas - Safari POS{% endblock %}
+
+{% block subnav %}
+<nav class="bg-white border-bottom shadow-sm py-2">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center">
+        <ul class="nav nav-pills gap-1">
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/">
+                    <i class="bi bi-grid-fill me-1"></i> Centro de Control
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/usuarios/">
+                    <i class="bi bi-people-fill me-1"></i> Usuarios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active bg-success text-white fw-bold" href="/mantenedores/mesas/">
+                    <i class="bi bi-square-fill me-1"></i> Mesas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/puntos-de-venta/">
+                    <i class="bi bi-display me-1"></i> Puntos de Venta
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/menus/">
+                    <i class="bi bi-journal-bookmark-fill me-1"></i> Menús / Categorías
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/productos/">
+                    <i class="bi bi-egg-fried me-1"></i> Productos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" href="/mantenedores/auditoria/">
+                    <i class="bi bi-shield-check me-1"></i> Auditoría
+                </a>
+            </li>
+        </ul>
+        <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">
+            <i class="bi bi-layout-text-window me-1"></i> Salón y Terrazas
+        </span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="bi bi-square-fill text-success me-2"></i> Mantenedor de Mesas
+        </h3>
+        <p class="text-muted mb-0">Control de distribución del salón, número físico, capacidad máxima de comensales y estados.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/mantenedores/mesas/registrar/" class="btn btn-success fw-bold shadow-sm btn-action">
+            <i class="bi bi-plus-circle me-1"></i> Agregar Mesa
+        </a>
+        <a href="/mantenedores/" class="btn btn-outline-secondary btn-action">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Centro
+        </a>
+    </div>
+</div>
+
+<!-- Tabla Estándar de Mesas -->
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+        <span class="fw-bold">
+            <i class="bi bi-table me-2 text-warning"></i> Distribución de Mesas en Salón
+        </span>
+        <span class="badge bg-success text-white px-2 py-1">
+            Total: {{ mesas|length }} mesas
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0 table-custom">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-12 text-center">N° Mesa</th>
+                        <th class="th-w-30">Nombre / Sector</th>
+                        <th class="th-w-20 text-center">Capacidad Máxima</th>
+                        <th class="th-w-18 text-center">Estado de Ocupación</th>
+                        <th class="th-w-20 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in mesas %}
+                    <tr>
+                        <td class="text-center">
+                            <span class="badge bg-dark fs-6 px-3 py-2 rounded-pill">#{{ m.numero }}</span>
+                        </td>
+                        <td>
+                            <strong class="text-dark">{{ m.nombre }}</strong>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark border px-3 py-1">
+                                <i class="bi bi-people me-1 text-primary"></i> {{ m.capacidad }} comensales
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if m.estado == 'disponible' or m.estado == 'desocupada' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-check-circle me-1"></i> Disponible
+                            </span>
+                            {% elif m.estado == 'ocupada' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-clock-history me-1"></i> Ocupada
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 rounded-pill">
+                                <i class="bi bi-bookmark me-1"></i> Reservada
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="/mantenedores/mesas/actualizar/{{ m.id }}/" class="btn btn-outline-primary btn-action" title="Editar Mesa">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </a>
+                                <a href="/mantenedores/mesas/eliminar/{{ m.id }}/"
+                                   class="btn btn-outline-danger btn-action"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar la mesa #{{ m.numero }} ({{ m.nombre }})?"
+                                   title="Eliminar Mesa">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="bi bi-square fs-1 d-block mb-2"></i>
+                            No hay mesas registradas en el salón.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

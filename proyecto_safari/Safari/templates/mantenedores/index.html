@@ -1,0 +1,199 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+
+{% block title %}Centro de Control Mantenedores{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Módulos Mantenedores del Sistema</h3>
+        <p class="text-muted mb-0">Gestión integral de catálogos maestros, configuración de salón, cajas y bitácora de auditoría.</p>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2 fs-6 rounded-pill">
+        <i class="bi bi-shield-lock-fill me-1"></i> Modo Administrador
+    </span>
+</div>
+
+<!-- Tarjetas de Resumen y Accesos Directos CRUD -->
+<div class="row g-3 mb-4">
+    <!-- Usuarios -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Personal / Empleados</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_usuarios }}</h2>
+                    <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ usuarios_activos }} activos</small>
+                </div>
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle fs-3">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/usuarios/" class="btn btn-outline-primary btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Gestionar Usuarios
+                </a>
+                <span class="badge bg-light text-muted border">CRUD Completo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mesas -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Salón y Terrazas</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_mesas }}</h2>
+                    <small class="text-muted"><i class="bi bi-person-arms-up me-1"></i>{{ total_capacidad }} comensales totales</small>
+                </div>
+                <div class="bg-success-subtle text-success p-3 rounded-circle fs-3">
+                    <i class="bi bi-square-fill"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/mesas/" class="btn btn-outline-success btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Gestionar Mesas
+                </a>
+                <span class="badge bg-light text-muted border">CRUD Completo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Puntos de Venta -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Puntos de Venta (POS)</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_pdv }}</h2>
+                    <small class="text-info"><i class="bi bi-display me-1"></i>Cajas y Terminales</small>
+                </div>
+                <div class="bg-info-subtle text-info p-3 rounded-circle fs-3">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/puntos-de-venta/" class="btn btn-outline-info btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Gestionar Cajas
+                </a>
+                <span class="badge bg-light text-muted border">CRUD Completo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menús / Categorías -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Menús / Categorías</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_menus }}</h2>
+                    <small class="text-muted"><i class="bi bi-tags me-1"></i>Secciones de la carta</small>
+                </div>
+                <div class="bg-warning-subtle text-warning p-3 rounded-circle fs-3">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/menus/" class="btn btn-outline-warning text-dark btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Gestionar Menús
+                </a>
+                <span class="badge bg-light text-muted border">CRUD Completo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Catálogo Gastronómico</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_productos }}</h2>
+                    <small class="text-muted"><i class="bi bi-box-seam me-1"></i>Artículos registrados</small>
+                </div>
+                <div class="bg-danger-subtle text-danger p-3 rounded-circle fs-3">
+                    <i class="bi bi-egg-fried"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/productos/" class="btn btn-outline-danger btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Gestionar Productos
+                </a>
+                <span class="badge bg-light text-muted border">CRUD Completo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auditoría -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card crud-card h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold">Registro de Auditoría</span>
+                    <h2 class="fw-bold text-dark mt-1 mb-0">{{ total_auditorias }}</h2>
+                    <small class="text-primary"><i class="bi bi-clock-history me-1"></i>Eventos auditados</small>
+                </div>
+                <div class="bg-secondary-subtle text-secondary p-3 rounded-circle fs-3">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                <a href="/mantenedores/auditoria/" class="btn btn-outline-secondary btn-sm fw-bold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Ver Bitácora
+                </a>
+                <span class="badge bg-dark text-white">OWASP / Auditoría</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Últimos Eventos Registrados en la Bitácora de Auditoría -->
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-shield-shaded text-primary me-2"></i> Actividad Reciente del Sistema (HistorialAccion)
+        </h5>
+        <a href="/mantenedores/auditoria/" class="btn btn-sm btn-outline-primary">
+            Ver Bitácora Completa <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th class="th-w-15">Fecha y Hora</th>
+                        <th class="th-w-15">Usuario</th>
+                        <th class="th-w-12 text-center">Acción</th>
+                        <th class="th-w-18">Módulo / Tabla</th>
+                        <th class="th-w-40">Detalle Operativo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in ultimas_acciones %}
+                    <tr>
+                        <td><span class="text-muted"><i class="bi bi-clock me-1"></i>{{ h.fecha|date:"d/m/Y H:i:s" }}</span></td>
+                        <td>
+                            <strong>{{ h.usuario.nombre|default:"Sistema" }}</strong>
+                            <small class="text-muted d-block">@{{ h.usuario.username|default:"sistema" }}</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if h.accion == 'CREAR' %}bg-success{% elif h.accion == 'ACTUALIZAR' %}bg-primary{% elif h.accion == 'ELIMINAR' %}bg-danger{% elif h.accion == 'LOGIN' %}bg-info text-dark{% else %}bg-warning text-dark{% endif %} px-2 py-1">
+                                {{ h.accion }}
+                            </span>
+                        </td>
+                        <td><strong>{{ h.modulo }}</strong></td>
+                        <td><span class="text-dark">{{ h.detalle }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No se registran acciones recientes en la bitácora.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

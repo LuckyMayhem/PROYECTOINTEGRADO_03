@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Actualizar Punto de Venta - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-xl-6">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-display text-info me-2"></i> Actualizar Punto de Venta #{{ pdv_editar.id }}
+                </h5>
+                <a href="/mantenedores/puntos-de-venta/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/puntos-de-venta/guardar/" method="POST" id="formActualizarPdv">
+                    {% csrf_token %}
+                    <input type="hidden" name="pdv_id" value="{{ pdv_editar.id }}">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre / Identificador de Caja <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required value="{{ pdv_editar.nombre }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Ubicación Física</label>
+                            <input type="text" name="ubicacion" class="form-control" value="{{ pdv_editar.ubicacion|default:'' }}" placeholder="Ej: Barra Principal, Sector Terraza">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado Operacional <span class="text-danger">*</span></label>
+                            <select name="estado" class="form-select">
+                                <option value="activo" {% if pdv_editar.estado == 'activo' %}selected{% endif %}>Activo (Habilitado para turnos y cobro)</option>
+                                <option value="inactivo" {% if pdv_editar.estado == 'inactivo' %}selected{% endif %}>Inactivo (En mantenimiento / Fuera de servicio)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/puntos-de-venta/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-info fw-bold text-dark px-4">
+                            <i class="bi bi-save me-1"></i> Actualizar Punto de Venta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

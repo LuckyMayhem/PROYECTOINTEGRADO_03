@@ -1,0 +1,105 @@
+/* ==========================================================================
+   SafariPOS — Estilos Módulo de Caja (cajero.html)
+   Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   ========================================================================== */
+
+body.caja-body {
+    background-color: var(--safari-bg-dark, #121212);
+    color: var(--safari-text-light, #F8F9FA);
+    min-height: 100vh;
+}
+
+.touch-card {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+    border-radius: 12px;
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    color: #F8F9FA;
+}
+
+.touch-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--safari-gold, #F5B041);
+    box-shadow: 0 4px 14px rgba(245, 176, 65, 0.25);
+}
+
+.touch-card.disabled-card {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: #1a1a1a;
+    border-color: #2a2a2a;
+}
+
+.cart-panel {
+    background: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    color: #F8F9FA;
+}
+
+.cart-scroll {
+    max-height: 250px;
+}
+
+/* Contenedores compactos estilo ListView de Android */
+.listview-container {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    border-radius: 6px;
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    color: #F8F9FA;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Tarjetas para Cuentas Pendientes por Mesa */
+.card-mesa-pendiente {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    border-radius: 12px;
+    background-color: var(--safari-surface-dark, #1E1E1E);
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    color: #F8F9FA;
+}
+
+.card-mesa-pendiente:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.card-mesa-listo-cobro {
+    border: 2px solid var(--safari-gold, #F5B041) !important;
+    background-color: rgba(245, 176, 65, 0.08) !important;
+}
+
+.card-mesa-en-consumo {
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    background-color: var(--safari-surface-dark, #1E1E1E);
+}
+
+/* REGLA CLAVE: Solo imprimir el comprobante térmico */
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+    #comprobanteImprimible, #comprobanteImprimible * {
+        visibility: visible !important;
+    }
+    #comprobanteImprimible {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 320px !important;
+        margin: 0 auto !important;
+        padding: 10px !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+}

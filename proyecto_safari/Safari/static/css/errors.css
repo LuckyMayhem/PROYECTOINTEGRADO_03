@@ -1,0 +1,106 @@
+/* ==============================================================================
+   SafariPOS — Páginas de Error (400, 401, 403, 404, 500, 502, 503, 504)
+   Estética Corporativa: Negro Carbón (#121212, #1E1E1E) y Dorado Safari (#F5B041)
+   ============================================================================== */
+
+body.error-page-body {
+    background-color: #121212;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.88)), url('../img/safari-savanna.svg');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #f8f9fa;
+    padding: 1.5rem 1rem;
+}
+
+.error-card {
+    max-width: 580px;
+    width: 100%;
+    background-color: #1e1e1e !important;
+    border: 1px solid rgba(245, 176, 65, 0.35) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85) !important;
+    overflow: hidden;
+}
+
+.error-card-header {
+    background: linear-gradient(180deg, #181818 0%, #242424 100%) !important;
+    border-bottom: 2px solid #f5b041 !important;
+    padding: 1.25rem 1.5rem;
+}
+
+.error-brand-text {
+    color: #f5b041;
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+
+.error-card-body {
+    background-color: #1e1e1e;
+    color: #f8f9fa;
+    padding: 2.25rem 2rem;
+}
+
+.error-card-body h2 {
+    color: #f8f9fa !important;
+    font-weight: 800;
+}
+
+.error-card-body p,
+.error-card-body .text-muted {
+    color: #b0b3b8 !important;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.error-code-badge {
+    font-size: 0.9rem;
+    letter-spacing: 1.5px;
+    background-color: rgba(245, 176, 65, 0.15) !important;
+    color: #ffc107 !important;
+    border: 1px solid #f5b041 !important;
+    font-weight: 700;
+}
+
+.error-img-wrapper {
+    margin-bottom: 1.5rem;
+}
+
+.error-img {
+    max-width: 320px;
+    max-height: 240px;
+    width: 100%;
+    object-fit: contain;
+    border-radius: 0.85rem;
+    border: 2px solid rgba(245, 176, 65, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    background-color: #141414;
+    padding: 0.35rem;
+}
+
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+}
+
+.error-footer-text {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333333;
+    color: #b0b3b8;
+    font-size: 0.8rem;
+}
+
+.error-footer-text strong {
+    color: #f5b041;
+}

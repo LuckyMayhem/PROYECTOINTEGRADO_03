@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Mantenedores del Sistema{% endblock %} • SafariPOS — Gestión Gastronómica & Aventura</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/safari-pos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mantenedores.css' %}">
+</head>
+<body class="bg-light" data-authenticated="{% if request.session.usuario or user.is_authenticated %}true{% else %}false{% endif %}" data-current-admin-id="{{ request.session.usuario_id|default:request.session.usuario.id }}">
+
+    <!-- Header de Navegación Principal -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-dark px-3 py-2 shadow-sm sticky-top">
+        <div class="container-fluid">
+            <a href="/mantenedores/" class="navbar-brand fw-bold d-flex align-items-center gap-2 text-decoration-none">
+                <span class="fs-4">🦁</span>
+                <span>SafariPOS — Gestión Gastronómica & Aventura • Mantenedores</span>
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/administrador/" class="btn btn-outline-light btn-sm fw-bold">
+                    <i class="bi bi-speedometer2 me-1"></i> Panel Admin
+                </a>
+                <a href="/stock/" class="btn btn-outline-warning btn-sm fw-bold">
+                    <i class="bi bi-box-seam me-1"></i> Stock
+                </a>
+                <a href="/ventas/" class="btn btn-outline-info btn-sm fw-bold">
+                    <i class="bi bi-receipt me-1"></i> Ventas
+                </a>
+                <div class="text-white small text-end lh-1 d-none d-sm-block ms-2">
+                    <strong class="d-block">{{ usuario }}</strong>
+                    <span class="badge bg-warning text-dark text-uppercase">{{ rol }}</span>
+                </div>
+                <a href="/logout/" class="btn btn-outline-danger btn-sm ms-2">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Subbarra de Navegación de Mantenedores -->
+    <nav class="bg-white border-bottom shadow-sm py-2">
+        <div class="container">
+            <ul class="nav nav-pills flex-nowrap overflow-auto py-1">
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'hub' or request.path == '/mantenedores/' %}active{% endif %}" href="/mantenedores/">
+                        <i class="bi bi-grid-fill me-1"></i> Centro de Control
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'usuarios' or '/mantenedores/usuarios/' in request.path %}active{% endif %}" href="/mantenedores/usuarios/">
+                        <i class="bi bi-people-fill me-1"></i> Usuarios
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'mesas' or '/mantenedores/mesas/' in request.path %}active{% endif %}" href="/mantenedores/mesas/">
+                        <i class="bi bi-square-fill me-1"></i> Mesas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'puntos_venta' or '/mantenedores/puntos-de-venta/' in request.path %}active{% endif %}" href="/mantenedores/puntos-de-venta/">
+                        <i class="bi bi-display me-1"></i> Puntos de Venta
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'menus' or '/mantenedores/menus/' in request.path %}active{% endif %}" href="/mantenedores/menus/">
+                        <i class="bi bi-journal-bookmark-fill me-1"></i> Menús / Categorías
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'productos' or '/mantenedores/productos/' in request.path %}active{% endif %}" href="/mantenedores/productos/">
+                        <i class="bi bi-egg-fried me-1"></i> Productos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if seccion_activa == 'auditoria' or '/mantenedores/auditoria/' in request.path %}active{% endif %}" href="/mantenedores/auditoria/">
+                        <i class="bi bi-shield-check me-1"></i> Auditoría
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <main class="container my-4">
+
+        <!-- Mensajes de Confirmación del Sistema (Django Messages) -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' or message.tags == 'danger' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <i class="bi {% if message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-octagon-fill text-danger{% elif message.tags == 'success' %}bi-check-circle-fill text-success{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill text-warning{% else %}bi-info-circle-fill text-info{% endif %} me-2 fs-5 align-middle"></i>
+                <span class="align-middle fw-medium">{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if alerta_admin %}
+        <div class="alert alert-{{ alerta_admin.tipo }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi {% if alerta_admin.tipo == 'danger' %}bi-exclamation-triangle-fill text-danger{% else %}bi-check-circle-fill text-success{% endif %} me-2 fs-5 align-middle"></i>
+            <span class="align-middle fw-medium">{{ alerta_admin.texto }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+
+    </main>
+
+    <footer class="text-center py-3 text-muted small border-top bg-white mt-5 footer-safari">
+        Parque Safari Chile • <strong>SafariPOS</strong> — Gestión Gastronómica & Aventura — Módulos Mantenedores CRUD
+    </footer>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script de Deslogueo Automático por Inactividad (30 minutos AFK) -->
+    <script src="{% static 'js/inactividad.js' %}"></script>
+
+    <!-- Script de Seguridad Global contra manipulación de Formularios en DevTools (POST vs GET) -->
+    <script src="{% static 'js/seguridad_formularios.js' %}"></script>
+    <script src="{% static 'js/validaciones.js' %}"></script>
+    <script src="{% static 'js/mantenedores.js' %}"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

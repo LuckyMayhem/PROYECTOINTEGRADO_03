@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Nueva Categoría de Menú - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-xl-6">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-journal-bookmark-fill text-warning me-2"></i> Registrar Nueva Sección / Menú
+                </h5>
+                <a href="/mantenedores/menus/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/menus/guardar/" method="POST" id="formRegistrarMenu">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre de la Sección <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required placeholder="Ej: Platos de Fondo, Bebestibles, Postres">
+                            <small class="text-muted">Nombre visible en la comanda y carta del restaurante.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción de la Sección</label>
+                            <input type="text" name="descripcion" class="form-control" placeholder="Ej: Hamburguesas, carnes a la brasa y guarniciones">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Estado de la Sección <span class="text-danger">*</span></label>
+                            <select name="estado" class="form-select">
+                                <option value="activo" selected>Activo (Visible en la carta y comandas)</option>
+                                <option value="inactivo">Inactivo (Oculto temporalmente)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/menus/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark px-4">
+                            <i class="bi bi-check-circle-fill me-1"></i> Registrar Categoría
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

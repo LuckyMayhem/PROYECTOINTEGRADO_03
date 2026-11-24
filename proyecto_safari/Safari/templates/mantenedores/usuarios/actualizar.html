@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Actualizar Usuario - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-person-gear text-warning me-2"></i> Actualizar Usuario: @{{ usuario_editar.username }}
+                </h5>
+                <a href="/mantenedores/usuarios/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/usuarios/guardar/" method="POST" id="formActualizarUsuario">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" value="{{ usuario_editar.id }}">
+
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">RUT / Cédula</label>
+                            <input type="text" name="rut" class="form-control" value="{{ usuario_editar.rut|default:'' }}" placeholder="12.345.678-9">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required value="{{ usuario_editar.nombre }}">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Nombre de Usuario <span class="text-danger">*</span></label>
+                            <input type="text" name="username" class="form-control" required value="{{ usuario_editar.username }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input type="email" name="correo" class="form-control" required value="{{ usuario_editar.correo }}">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Rol / Perfil <span class="text-danger">*</span></label>
+                            <select name="rol" id="selectRolActualizar" class="form-select" >
+                                <option value="cajero" {% if usuario_editar.rol == 'cajero' %}selected{% endif %}>Cajero (POS y Cobro)</option>
+                                <option value="mesero" {% if usuario_editar.rol == 'mesero' %}selected{% endif %}>Mesero (Salón y Mesas)</option>
+                                <option value="cocinero" {% if usuario_editar.rol == 'cocinero' %}selected{% endif %}>Cocinero (Monitor de Cocina)</option>
+                                <option value="administrador" {% if usuario_editar.rol == 'administrador' %}selected{% endif %}>Administrador (Control Total)</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Estado de la Cuenta <span class="text-danger">*</span></label>
+                            <select name="estado" class="form-select">
+                                <option value="activo" {% if usuario_editar.estado == 'activo' %}selected{% endif %}>Activo (Habilitado)</option>
+                                <option value="inactivo" {% if usuario_editar.estado == 'inactivo' %}selected{% endif %}>Inactivo (Deshabilitado)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Cambiar Contraseña</label>
+                            <input type="password" name="password" class="form-control" placeholder="Dejar en blanco para conservar la contraseña actual">
+                            <small class="text-muted">Solo ingrese un valor si desea actualizar la clave del usuario.</small>
+                        </div>
+
+                        <!-- Sección de Reautenticación de Seguridad al Asignar Rol Administrador -->
+                        <div id="seccionAdminConfirmActualizar" class="col-12 {% if usuario_editar.rol == 'administrador' and usuario_editar.id != request.session.usuario_id and usuario_editar.id != request.session.usuario.id %}{% else %}d-none{% endif %}">
+                            <div class="alert alert-warning border border-warning p-3 mt-2 mb-0 rounded-3">
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="bi bi-shield-lock-fill text-danger me-1"></i> Confirmación Requerida
+                                </h6>
+                                <p class="small text-muted mb-2">Para asignar el perfil de Administrador a otro usuario, confirme sus credenciales actuales:</p>
+                                <div class="row g-2">
+                                    <div class="col-sm-6">
+                                        <input type="text" name="admin_confirm_username" class="form-control form-control-sm" placeholder="Su usuario admin actual">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <input type="password" name="admin_confirm_password" class="form-control form-control-sm" placeholder="Su contraseña admin actual">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/usuarios/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary fw-bold px-4">
+                            <i class="bi bi-save me-1"></i> Actualizar Usuario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}

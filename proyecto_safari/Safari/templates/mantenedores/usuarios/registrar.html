@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Nuevo Usuario - Safari POS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+        <div class="card shadow border-0 rounded-3 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-person-plus-fill text-warning me-2"></i> Registrar Nuevo Usuario
+                </h5>
+                <a href="/mantenedores/usuarios/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                </a>
+            </div>
+
+            <div class="card-body p-4 bg-white">
+                <form action="/mantenedores/usuarios/guardar/" method="POST" id="formRegistrarUsuario">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">RUT / Cédula</label>
+                            <input type="text" name="rut" class="form-control" placeholder="12.345.678-9">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" required placeholder="Ej: Juan Carlos Pérez">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Nombre de Usuario <span class="text-danger">*</span></label>
+                            <input type="text" name="username" class="form-control" required placeholder="juanperez">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input type="email" name="correo" class="form-control" required placeholder="juan@parquesafari.cl">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Rol / Perfil <span class="text-danger">*</span></label>
+                            <select name="rol" id="selectRol" class="form-select" >
+                                <option value="cajero" selected>Cajero (POS y Cobro)</option>
+                                <option value="mesero">Mesero (Salón y Mesas)</option>
+                                <option value="cocinero">Cocinero (Monitor de Cocina)</option>
+                                <option value="administrador">Administrador (Control Total)</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Estado de la Cuenta <span class="text-danger">*</span></label>
+                            <select name="estado" class="form-select">
+                                <option value="activo" selected>Activo (Habilitado)</option>
+                                <option value="inactivo">Inactivo (Deshabilitado)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Contraseña de Acceso <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" required placeholder="Mínimo 6 caracteres seguros">
+                            <small class="text-muted">La contraseña inicial para el nuevo usuario del sistema.</small>
+                        </div>
+
+                        <!-- Sección de Reautenticación de Seguridad al Asignar Rol Administrador -->
+                        <div class="col-12" id="seccionAdminConfirm" class="col-12 d-none">
+                            <div class="alert alert-warning border border-warning p-3 mt-2 mb-0 rounded-3">
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="bi bi-shield-lock-fill text-danger me-1"></i> Confirmación Requerida
+                                </h6>
+                                <p class="small text-muted mb-2">Para asignar el perfil de Administrador a otro usuario, confirme sus credenciales actuales:</p>
+                                <div class="row g-2">
+                                    <div class="col-sm-6">
+                                        <input type="text" name="admin_confirm_username" class="form-control form-control-sm" placeholder="Su usuario admin actual">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <input type="password" name="admin_confirm_password" class="form-control form-control-sm" placeholder="Su contraseña admin actual">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <a href="/mantenedores/usuarios/" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary fw-bold px-4">
+                            <i class="bi bi-check-circle-fill me-1"></i> Registrar Usuario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}

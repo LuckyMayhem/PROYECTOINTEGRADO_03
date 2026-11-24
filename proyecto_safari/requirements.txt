@@ -1,0 +1,23 @@
+# ==============================================================================
+# SAFARI POS - DEPENDENCIAS DE PRODUCCIÓN Y DESARROLLO (Ubuntu Linux / AWS EC2)
+# ==============================================================================
+
+# Framework Web Django
+Django>=5.0,<7.0
+
+# Servidor de aplicaciones WSGI para producción en Linux (AWS EC2 + Systemd + Nginx)
+gunicorn>=21.2.0
+
+# Gestión segura de variables de entorno (.env)
+python-decouple>=3.8
+
+# Conectores y controladores de base de datos MySQL (Compatibles con Linux)
+mysqlclient>=2.2.0
+PyMySQL>=1.1.0
+cryptography>=41.0.0
+
+# Procesamiento de imágenes y media
+Pillow>=10.0.0
+
+# Base de datos de zonas horarias para I18N
+tzdata>=2024.1

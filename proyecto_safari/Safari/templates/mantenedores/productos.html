@@ -1,0 +1,166 @@
+{% extends 'mantenedores/base_mantenedores.html' %}
+{% load static %}
+
+{% block title %}Mantenedor de Productos{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">Mantenedor de Productos e Inventario</h3>
+        <p class="text-muted mb-0">Catálogo oficial con códigos SKU, vinculación a menú, precios y existencias.</p>
+    </div>
+    <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalProducto" data-action="nuevo-producto-crud">
+        <i class="bi bi-plus-circle-fill me-1"></i> Nuevo Producto
+    </button>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="th-w-12">Código SKU</th>
+                        <th class="th-w-26">Nombre del Producto</th>
+                        <th class="th-w-20">Categoría / Menú</th>
+                        <th class="th-w-14 text-end">Precio (CLP)</th>
+                        <th class="th-w-12 text-center">Stock</th>
+                        <th class="th-w-16 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark border fw-mono">
+                                {{ p.codigo|default:"SIN-SKU" }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong class="fs-6 text-dark">{{ p.nombre }}</strong>
+                            <small class="text-muted d-block">{{ p.descripcion|default:"-" }}</small>
+                        </td>
+                        <td>
+                            {% if p.menu %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                <i class="bi bi-bookmark-fill me-1"></i> {{ p.menu.nombre }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1">Sin categoría</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold text-success fs-6">
+                            ${{ p.precio|floatformat:0 }}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if p.stock > 10 %}bg-success{% elif p.stock > 0 %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-1 rounded-pill">
+                                {{ p.stock }} u.
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalProducto"
+                                        data-action="editar-producto-crud"
+                                        data-id="{{ p.id }}"
+                                        data-codigo="{{ p.codigo }}"
+                                        data-nombre="{{ p.nombre }}"
+                                        data-descripcion="{{ p.descripcion }}"
+                                        data-precio="{{ p.precio }}"
+                                        data-stock="{{ p.stock }}"
+                                        data-menu="{{ p.menu_id|default:'' }}"
+                                        title="Editar Producto">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <a href="/mantenedores/productos/eliminar/{{ p.id }}/"
+                                   class="btn btn-outline-danger"
+                                   data-action="confirm-delete" data-confirm-msg="¿Seguro que desea eliminar el producto '{{ p.nombre|escapejs }}'?"
+                                   title="Eliminar Producto">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No hay productos registrados en el catálogo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear / Editar Producto -->
+<div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/mantenedores/productos/guardar/" method="POST" id="formProducto">
+                {% csrf_token %}
+                <input type="hidden" name="prod_id" id="prodId">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalProductoTitulo">
+                        <i class="bi bi-egg-fried text-warning me-2"></i> Crear Nuevo Producto
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-sm-5">
+                            <label class="form-label fw-bold">Código SKU</label>
+                            <input type="text" name="codigo" id="prodCodigo" class="form-control" placeholder="Ej: HAM-001">
+                        </div>
+                        <div class="col-sm-7">
+                            <label class="form-label fw-bold">Categoría / Menú <span class="text-danger">*</span></label>
+                            <select name="menu_id" id="prodMenu" class="form-select">
+                                <option value="">-- Sin categoría asignada --</option>
+                                {% for mn in menus %}
+                                <option value="{{ mn.id }}">{{ mn.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Nombre del Producto <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" id="prodNombre" class="form-control" required placeholder="Ej: Hamburguesa Safari Doble">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción</label>
+                            <input type="text" name="descripcion" id="prodDescripcion" class="form-control" placeholder="Ingredientes o detalles para el cliente">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Precio en CLP <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="precio" id="prodPrecio" class="form-control" required min="0" step="50" placeholder="7500">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Stock Inicial <span class="text-danger">*</span></label>
+                            <input type="number" name="stock" id="prodStock" class="form-control" required min="0" placeholder="25">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark" id="btnGuardarProducto">
+                        <i class="bi bi-save me-1"></i> Guardar Producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/validaciones_producto.js' %}"></script>
+
+{% endblock %}

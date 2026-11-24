@@ -1,0 +1,432 @@
+/* ==============================================================================
+   SafariPOS — Gestión Gastronómica & Aventura (Parque Safari Chile)
+   Estilos Corporativos Globales: Negro Carbón (#121212, #1E1E1E) y Amarillo Ámbar (#F5B041, #FFC107)
+   ============================================================================== */
+
+:root {
+    --safari-bg-dark: #121212;
+    --safari-surface-dark: #1e1e1e;
+    --safari-surface-elevated: #262626;
+    --safari-surface-border: #333333;
+    --safari-surface-border-subtle: #2a2a2a;
+    --safari-gold: #f5b041;
+    --safari-amber: #ffc107;
+    --safari-gold-hover: #ffa000;
+    --safari-gold-dark: #d4ac0d;
+    --safari-text-light: #f8f9fa;
+    --safari-text-muted: #b0b3b8;
+    --safari-accent-green: #2ecc71;
+    --safari-accent-red: #e74c3c;
+    --safari-accent-blue: #3498db;
+}
+
+/* ------------------------------------------------------------------------------
+   1. AMBIENTACIÓN GENERAL Y CUERPO (Fondo Sabana Safari)
+   ------------------------------------------------------------------------------ */
+
+body {
+    background-color: #121212;
+    color: #f8f9fa;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.88)), url('../img/safari-savanna.svg');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+body.bg-light {
+    background-color: #121212 !important;
+}
+
+/* Reseteo de utilidades de fondo Bootstrap para preservar coherencia temática */
+.bg-light {
+    background-color: #121212 !important;
+}
+
+.bg-white {
+    background-color: #1e1e1e !important;
+    color: #f8f9fa !important;
+}
+
+/* Texto legible de alto contraste */
+.text-dark,
+.card .text-dark,
+.modal .text-dark,
+.table .text-dark,
+main .text-dark {
+    color: #f8f9fa !important;
+}
+
+.text-muted,
+.card .text-muted,
+.modal .text-muted,
+main .text-muted {
+    color: #b0b3b8 !important;
+}
+
+/* ------------------------------------------------------------------------------
+   2. BARRAS DE NAVEGACIÓN Y ENCABEZADOS (Navbar Corporativo Safari)
+   ------------------------------------------------------------------------------ */
+
+.navbar-custom,
+header.navbar-dark {
+    background-color: #181818 !important;
+    border-bottom: 2px solid #f5b041;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+}
+
+.navbar-brand {
+    color: #f8f9fa !important;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.navbar-brand .fs-4 {
+    filter: drop-shadow(0 2px 4px rgba(245, 176, 65, 0.4));
+}
+
+.nav-link-custom {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.nav-link-custom:hover {
+    color: #f5b041;
+    background-color: rgba(245, 176, 65, 0.12);
+}
+
+.nav-link-custom.active {
+    color: #121212 !important;
+    background-color: #f5b041 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(245, 176, 65, 0.35);
+}
+
+.dropdown-menu-dark {
+    background-color: #1e1e1e !important;
+    border: 1px solid #383838 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.dropdown-menu-dark .dropdown-item {
+    color: #f8f9fa;
+    font-weight: 500;
+}
+
+.dropdown-menu-dark .dropdown-item:hover {
+    background-color: #f5b041;
+    color: #121212;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------------------------------
+   3. TARJETAS, PANELES Y CONTENEDORES (Superficie #1E1E1E)
+   ------------------------------------------------------------------------------ */
+
+.card {
+    background-color: #1e1e1e;
+    border: 1px solid #333333;
+    border-radius: 0.75rem;
+    color: #f8f9fa;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+    border-color: rgba(245, 176, 65, 0.3);
+}
+
+.card-header {
+    background-color: #242424 !important;
+    border-bottom: 1px solid #333333 !important;
+    color: #f8f9fa !important;
+    font-weight: 600;
+}
+
+.card-footer {
+    background-color: #242424 !important;
+    border-top: 1px solid #333333 !important;
+    color: #b0b3b8 !important;
+}
+
+.stat-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333333;
+    border-radius: 0.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    border-color: #f5b041;
+}
+
+/* Modales */
+.modal-content {
+    background-color: #1e1e1e;
+    border: 1px solid #383838;
+    color: #f8f9fa;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    border-radius: 0.85rem;
+}
+
+.modal-header {
+    background-color: #242424;
+    border-bottom: 1px solid #333333;
+    color: #f8f9fa;
+}
+
+.modal-footer {
+    background-color: #242424;
+    border-top: 1px solid #333333;
+}
+
+/* ------------------------------------------------------------------------------
+   4. FORMULARIOS, INPUTS Y SELECTS (Gris Oscuro con Acento Ámbar)
+   ------------------------------------------------------------------------------ */
+
+.form-control,
+.form-select {
+    background-color: #222222 !important;
+    border: 1px solid #444444 !important;
+    color: #f8f9fa !important;
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control::placeholder {
+    color: #7a8288 !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #282828 !important;
+    border-color: #f5b041 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 0.25rem rgba(245, 176, 65, 0.25) !important;
+    outline: none;
+}
+
+.input-group-text {
+    background-color: #2c2c2c !important;
+    border: 1px solid #444444 !important;
+    color: #f5b041 !important;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------------
+   5. BOTONES CORPORATIVOS SAFARI (Dorado / Ámbar #F5B041 / #FFC107)
+   ------------------------------------------------------------------------------ */
+
+.btn-warning {
+    background: linear-gradient(135deg, #f5b041 0%, #ffc107 100%) !important;
+    border-color: #f5b041 !important;
+    color: #121212 !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease;
+}
+
+.btn-warning:hover,
+.btn-warning:focus {
+    background: linear-gradient(135deg, #ffc107 0%, #ffa000 100%) !important;
+    border-color: #ffa000 !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 14px rgba(245, 176, 65, 0.4) !important;
+    transform: translateY(-1px);
+}
+
+.btn-outline-warning {
+    border-color: #f5b041 !important;
+    color: #f5b041 !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-warning:hover,
+.btn-outline-warning:focus {
+    background-color: #f5b041 !important;
+    border-color: #f5b041 !important;
+    color: #121212 !important;
+    box-shadow: 0 4px 12px rgba(245, 176, 65, 0.3) !important;
+}
+
+.btn-outline-light {
+    border-color: #555555 !important;
+    color: #f8f9fa !important;
+}
+
+.btn-outline-light:hover {
+    background-color: #2d2d2d !important;
+    border-color: #f5b041 !important;
+    color: #f5b041 !important;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ------------------------------------------------------------------------------
+   6. TABLAS DE ALTO CONTRASTE (Temática Oscura)
+   ------------------------------------------------------------------------------ */
+
+.table {
+    color: #f8f9fa !important;
+    border-color: #333333 !important;
+}
+
+.table th {
+    background-color: #242424 !important;
+    color: #f5b041 !important;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #383838 !important;
+}
+
+.table td {
+    background-color: transparent !important;
+    color: #f8f9fa !important;
+    border-bottom: 1px solid #2d2d2d !important;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: rgba(245, 176, 65, 0.08) !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) td {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.table-custom th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ------------------------------------------------------------------------------
+   7. LISTVIEW ANDROID STYLE (Modo Oscuro con Scroll Suave)
+   ------------------------------------------------------------------------------ */
+
+.listview-container {
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    background-color: #181818;
+    color: #f8f9fa;
+    -webkit-overflow-scrolling: touch;
+}
+
+.listview-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.listview-container::-webkit-scrollbar-thumb {
+    background-color: #444444;
+    border-radius: 4px;
+}
+
+.listview-container::-webkit-scrollbar-thumb:hover {
+    background-color: #f5b041;
+}
+
+.list-group-item {
+    background-color: #1e1e1e !important;
+    border-color: #333333 !important;
+    color: #f8f9fa !important;
+}
+
+.list-group-item:hover {
+    background-color: #262626 !important;
+}
+
+/* ------------------------------------------------------------------------------
+   8. CAJAS DE ARQUEO Y DENOMINACIONES
+   ------------------------------------------------------------------------------ */
+
+.denominacion-box {
+    background-color: #1e1e1e;
+    border: 1px solid #383838;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    color: #f8f9fa;
+}
+
+.denominacion-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.denominacion-row:last-child {
+    margin-bottom: 0;
+}
+
+.input-denominacion {
+    max-width: 100px;
+    text-align: right;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------------
+   9. ANCHOS ESTÁNDAR Y UTILIDADES (Conservadas para compatibilidad total)
+   ------------------------------------------------------------------------------ */
+
+.th-w-8  { width: 8%; }
+.th-w-10 { width: 10%; }
+.th-w-12 { width: 12%; }
+.th-w-13 { width: 13%; }
+.th-w-14 { width: 14%; }
+.th-w-15 { width: 15%; }
+.th-w-16 { width: 16%; }
+.th-w-18 { width: 18%; }
+.th-w-20 { width: 20%; }
+.th-w-24 { width: 24%; }
+.th-w-25 { width: 25%; }
+.th-w-26 { width: 26%; }
+.th-w-28 { width: 28%; }
+.th-w-30 { width: 30%; }
+.th-w-32 { width: 32%; }
+.th-w-35 { width: 35%; }
+.th-w-40 { width: 40%; }
+
+.font-3xs { font-size: 0.7rem; }
+.font-2xs { font-size: 0.72rem; }
+.font-xs  { font-size: 0.75rem; }
+.font-sm  { font-size: 0.8rem; }
+.min-w-30 { min-width: 30px; display: inline-block; }
+
+.mw-260 { max-width: 260px; }
+.mw-320 { max-width: 320px; }
+.mw-360 { max-width: 360px; }
+.mw-400 { max-width: 400px; }
+.mw-440 { max-width: 440px; }
+.mw-500 { max-width: 500px; }
+.mw-520 { max-width: 520px; }
+.mw-540 { max-width: 540px; }
+.mw-600 { max-width: 600px; }
+.mw-620 { max-width: 620px; }
+.mw-650 { max-width: 650px; }
+
+/* ------------------------------------------------------------------------------
+   10. PIE DE PÁGINA (Footer)
+   ------------------------------------------------------------------------------ */
+
+footer {
+    background-color: #181818 !important;
+    border-top: 1px solid #333333 !important;
+    color: #b0b3b8 !important;
+}
+
+footer strong {
+    color: #f5b041;
+}

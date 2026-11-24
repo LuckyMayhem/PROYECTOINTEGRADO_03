@@ -1,0 +1,184 @@
+/* ==========================================================================
+   SafariPOS — Panel de Administración (administrador.html)
+   Tema Corporativo Oscuro Safari: Carbón / Ámbar Dorado
+   ========================================================================== */
+
+.stat-card {
+    background-color: var(--safari-surface-dark, #1E1E1E) !important;
+    border: 1px solid var(--safari-border-dark, #2E2E2E) !important;
+    border-radius: 1rem;
+    color: #F8F9FA;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--safari-gold, #F5B041) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+.stat-card h6 {
+    color: #F8F9FA !important;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+}
+
+/* Tarjetas métricas especializadas para reportes estadísticos */
+.report-metric-card {
+    border-radius: 1rem;
+    border: 1px solid var(--safari-border-dark, #2E2E2E);
+    background: var(--safari-surface-dark, #1E1E1E);
+    color: #F8F9FA;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.report-metric-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(245, 176, 65, 0.4);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.border-accent-primary {
+    border-top: 4px solid #0d6efd !important;
+}
+
+.border-accent-success {
+    border-top: 4px solid #28a745 !important;
+}
+
+.border-accent-warning {
+    border-top: 4px solid var(--safari-gold, #F5B041) !important;
+}
+
+.border-accent-danger {
+    border-top: 4px solid #dc3545 !important;
+}
+
+.border-accent-info {
+    border-top: 4px solid #17a2b8 !important;
+}
+
+.border-accent-dark {
+    border-top: 4px solid var(--safari-gold-hover, #FFA000) !important;
+}
+
+/* Badges para métodos de pago y cuadraturas en modo oscuro */
+.badge-metodo-efectivo {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #75b798;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+    font-weight: 600;
+}
+
+.badge-metodo-tarjeta {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: #6edff6;
+    border: 1px solid rgba(23, 162, 184, 0.4);
+    font-weight: 600;
+}
+
+.badge-metodo-transferencia {
+    background-color: rgba(13, 110, 253, 0.2);
+    color: #6ea8fe;
+    border: 1px solid rgba(13, 110, 253, 0.4);
+    font-weight: 600;
+}
+
+.badge-cuadrada {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #75b798;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+    font-weight: 600;
+}
+
+.badge-sobrante {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: #6edff6;
+    border: 1px solid rgba(23, 162, 184, 0.4);
+    font-weight: 600;
+}
+
+.badge-faltante {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #ea868f;
+    border: 1px solid rgba(220, 53, 69, 0.4);
+    font-weight: 600;
+}
+
+/* Podium para ranking de productos */
+.podium-badge {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.85rem;
+}
+
+.podium-1 {
+    background: linear-gradient(135deg, #F5B041 0%, #D4AC0D 100%);
+    color: #121212;
+    font-weight: bold;
+    box-shadow: 0 2px 6px rgba(245, 176, 65, 0.45);
+}
+
+.podium-2 {
+    background-color: #ced4da;
+    color: #121212;
+    font-weight: bold;
+}
+
+.podium-3 {
+    background-color: #fd7e14;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.podium-other {
+    background-color: #252525;
+    color: #adb5bd;
+    border: 1px solid #3a3a3a;
+}
+
+/* Tablas de reportes oscuras y legibles */
+.table-reports thead th {
+    background-color: #252525 !important;
+    color: var(--safari-gold, #F5B041) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #3a3a3a;
+    padding: 0.75rem;
+}
+
+.table-reports tbody td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    color: #E0E0E0;
+    border-color: #2a2a2a;
+}
+
+.table-reports tbody tr:hover {
+    background-color: rgba(245, 176, 65, 0.08) !important;
+}
+
+/* Cajas de métricas compactas */
+.metric-box-sm {
+    background: #252525;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #333333;
+    color: #E0E0E0;
+}
